@@ -1,0 +1,280 @@
+# All xacro argument values in this file are stored as strings.
+# Fixed model dimensions stay in Xacro properties, not in this launch-facing YAML.
+
+sim_file:
+  default_value: ""
+  description: "Path to the simulation YAML. If empty, wheel Gazebo contact/friction blocks and sensor Gazebo plugins are not added."
+
+controller_config_file:
+  default_value: "package://robot_mima_mkv30/config/model_sensors1/example_controllers.yaml.in"
+  description: "Path to a controller YAML template. The launch file resolves @robot_prefix@ before passing it to xacro."
+
+# Chassis.
+chassis_use_visual:
+  default_value: "True"
+  description: "Use visual elements for the chassis. Collision elements are still included when this is False."
+  choices: ["True", "true", "False", "false"]
+chassis_use_inertial:
+  default_value: "True"
+  description: "Use inertial elements for the chassis. If False, a null inertia is used."
+  choices: ["True", "true", "False", "false"]
+
+# Steerable wheels.
+s_wheel_use_v_mesh:
+  default_value: "True"
+  description: "Use the built-in steerable wheel visual mesh. If False, use the wheel primitive cylinder."
+  choices: ["True", "true", "False", "false"]
+s_wheel_steering_joint_limits:
+  default_value: "-0.7853981633974483 0.7853981633974483 100.0 100000.0"
+  description: "Steerable wheel steering joint limits as 'lower upper velocity effort'. The public MKV30 wheelbase and turning-radius estimate gives about +/-40 deg; the default uses +/-45 deg as an initial modeling margin."
+s_wheel_steering_joint_dynamics:
+  default_value: "0.001 0.001"
+  description: "Steerable wheel steering joint dynamics as 'damping friction'."
+s_wheel_rotation_joint_limits:
+  default_value: "1000.0 1000.0"
+  description: "Steerable wheel rotation joint limits as 'velocity effort'."
+s_wheel_rotation_joint_dynamics:
+  default_value: "0.001 0.001"
+  description: "Steerable wheel rotation joint dynamics as 'damping friction'."
+
+# Wheels.
+wheel_use_visual:
+  default_value: "True"
+  description: "Use visual elements for all wheels. Collision elements are still included when this is False."
+  choices: ["True", "true", "False", "false"]
+wheel_use_v_mesh:
+  default_value: "True"
+  description: "Use the built-in wheel visual mesh. If False, use the wheel primitive cylinder."
+  choices: ["True", "true", "False", "false"]
+wheel_use_inertial:
+  default_value: "True"
+  description: "Use inertial elements for all wheels. If False, null inertias are used."
+  choices: ["True", "true", "False", "false"]
+wheel_rotation_joint_limits:
+  default_value: "1000.0 1000.0"
+  description: "Wheel rotation joint limits as 'velocity effort'."
+wheel_rotation_joint_dynamics:
+  default_value: "0.001 0.001"
+  description: "Wheel rotation joint dynamics as 'damping friction'."
+
+# Fork.
+fork_use_visual:
+  default_value: "True"
+  description: "Use visual elements for the fork. Collision elements are still included when this is False."
+  choices: ["True", "true", "False", "false"]
+fork_use_inertial:
+  default_value: "False"
+  description: "Use inertial elements for mast, carriage and forks. If False, null inertias are used."
+  choices: ["True", "true", "False", "false"]
+fork_mast_limits:
+  default_value: "-0.05 0.09 0.2 100000.0"
+  description: "Mast tilt joint limits as 'lower upper velocity effort'."
+fork_holder_limits:
+  default_value: "0.0 3.0 0.2 100000.0"
+  description: "Fork holder lift joint limits as 'lower upper velocity effort'."
+fork_board_limits:
+  default_value: "-0.075 0.075 0.2 100000.0"
+  description: "Fork board lateral shift joint limits as 'lower upper velocity effort'."
+fork_board_motion_sign:
+  default_value: "1"
+  description: "Fork board lateral motion axis sign. Use 1 or -1."
+  choices: ["1", "-1"]
+
+# Front lidar2d: Leuzen RSL400
+use_front_lidar2d:
+  default_value: "True"
+  description: "If true, include the front 2D lidar link, joint, and simulation plugin."
+  choices: ["True", "False"]
+front_lidar2d_use_visual:
+  default_value: "True"
+  description: "Use the visual element for front_lidar2d."
+  choices: ["True", "true", "False", "false"]
+front_lidar2d_use_collision:
+  default_value: "True"
+  description: "Use the collision element for front_lidar2d."
+  choices: ["True", "true", "False", "false"]
+front_lidar2d_use_v_mesh:
+  default_value: "True"
+  description: "Use the visual mesh for front_lidar2d when the macro supports a visual mesh."
+  choices: ["True", "true", "False", "false"]
+front_lidar2d_v_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution visual mesh for front_lidar2d when a visual mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+front_lidar2d_use_c_mesh:
+  default_value: "False"
+  description: "Use the collision mesh for front_lidar2d when the macro supports a collision mesh."
+  choices: ["True", "true", "False", "false"]
+front_lidar2d_c_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution collision mesh for front_lidar2d when a collision mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+
+# Back lidar2d: Leuzen RSL400
+use_back_lidar2d:
+  default_value: "True"
+  description: "If true, include the back 2D lidar link, joint, and simulation plugin."
+  choices: ["True", "False"]
+back_lidar2d_use_visual:
+  default_value: "True"
+  description: "Use the visual element for back_lidar2d."
+  choices: ["True", "true", "False", "false"]
+back_lidar2d_use_collision:
+  default_value: "True"
+  description: "Use the collision element for back_lidar2d."
+  choices: ["True", "true", "False", "false"]
+back_lidar2d_use_v_mesh:
+  default_value: "True"
+  description: "Use the visual mesh for back_lidar2d when the macro supports a visual mesh."
+  choices: ["True", "true", "False", "false"]
+back_lidar2d_v_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution visual mesh for back_lidar2d when a visual mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+back_lidar2d_use_c_mesh:
+  default_value: "False"
+  description: "Use the collision mesh for back_lidar2d when the macro supports a collision mesh."
+  choices: ["True", "true", "False", "false"]
+back_lidar2d_c_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution collision mesh for back_lidar2d when a collision mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+
+# Left lidar2d: Leuzen RSL400
+use_left_lidar2d:
+  default_value: "True"
+  description: "If true, include the left 2D lidar link, joint, and simulation plugin."
+  choices: ["True", "False"]
+left_lidar2d_use_visual:
+  default_value: "True"
+  description: "Use the visual element for left_lidar2d."
+  choices: ["True", "true", "False", "false"]
+left_lidar2d_use_collision:
+  default_value: "True"
+  description: "Use the collision element for left_lidar2d."
+  choices: ["True", "true", "False", "false"]
+left_lidar2d_use_v_mesh:
+  default_value: "True"
+  description: "Use the visual mesh for left_lidar2d when the macro supports a visual mesh."
+  choices: ["True", "true", "False", "false"]
+left_lidar2d_v_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution visual mesh for left_lidar2d when a visual mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+left_lidar2d_use_c_mesh:
+  default_value: "False"
+  description: "Use the collision mesh for left_lidar2d when the macro supports a collision mesh."
+  choices: ["True", "true", "False", "false"]
+left_lidar2d_c_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution collision mesh for left_lidar2d when a collision mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+
+# Right lidar2d: Leuzen RSL400
+use_right_lidar2d:
+  default_value: "True"
+  description: "If true, include the right 2D lidar link, joint, and simulation plugin."
+  choices: ["True", "False"]
+right_lidar2d_use_visual:
+  default_value: "True"
+  description: "Use the visual element for right_lidar2d."
+  choices: ["True", "true", "False", "false"]
+right_lidar2d_use_collision:
+  default_value: "True"
+  description: "Use the collision element for right_lidar2d."
+  choices: ["True", "true", "False", "false"]
+right_lidar2d_use_v_mesh:
+  default_value: "True"
+  description: "Use the visual mesh for right_lidar2d when the macro supports a visual mesh."
+  choices: ["True", "true", "False", "false"]
+right_lidar2d_v_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution visual mesh for right_lidar2d when a visual mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+right_lidar2d_use_c_mesh:
+  default_value: "False"
+  description: "Use the collision mesh for right_lidar2d when the macro supports a collision mesh."
+  choices: ["True", "true", "False", "false"]
+right_lidar2d_c_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution collision mesh for right_lidar2d when a collision mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+
+# Front top lidar3d: Robosense Airy
+use_front_top_lidar3d:
+  default_value: "True"
+  description: "If true, include the front top 3D lidar link, joint, and simulation plugin."
+  choices: ["True", "False"]
+front_top_lidar3d_use_visual:
+  default_value: "True"
+  description: "Use the visual element for front_top_lidar3d."
+  choices: ["True", "true", "False", "false"]
+front_top_lidar3d_use_collision:
+  default_value: "True"
+  description: "Use the collision element for front_top_lidar3d."
+  choices: ["True", "true", "False", "false"]
+front_top_lidar3d_use_v_mesh:
+  default_value: "True"
+  description: "Use the visual mesh for front_top_lidar3d when the macro supports a visual mesh."
+  choices: ["True", "true", "False", "false"]
+front_top_lidar3d_v_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution visual mesh for front_top_lidar3d when a visual mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+front_top_lidar3d_use_c_mesh:
+  default_value: "False"
+  description: "Use the collision mesh for front_top_lidar3d when the macro supports a collision mesh."
+  choices: ["True", "true", "False", "false"]
+front_top_lidar3d_c_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution collision mesh for front_top_lidar3d when a collision mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+
+# Left top lidar3d: Robosense M1 Plus
+use_left_top_lidar3d:
+  default_value: "True"
+  description: "If true, include the left top 3D lidar link, joint, and simulation plugin."
+  choices: ["True", "False"]
+left_top_lidar3d_use_visual:
+  default_value: "True"
+  description: "Use the visual element for left_top_lidar3d."
+  choices: ["True", "true", "False", "false"]
+left_top_lidar3d_use_collision:
+  default_value: "True"
+  description: "Use the collision element for left_top_lidar3d."
+  choices: ["True", "true", "False", "false"]
+
+# Fork board RGB-D camera: Orbbec Gemini 335 LE
+use_fork_board_camera:
+  default_value: "True"
+  description: "If true, include the fork board RGB-D camera links, joints, and simulation plugins."
+  choices: ["True", "False"]
+fork_board_camera_use_visual:
+  default_value: "True"
+  description: "Use the visual element for fork_board_camera."
+  choices: ["True", "true", "False", "false"]
+fork_board_camera_use_collision:
+  default_value: "True"
+  description: "Use the collision element for fork_board_camera."
+  choices: ["True", "true", "False", "false"]
+fork_board_camera_use_v_mesh:
+  default_value: "True"
+  description: "Use the visual mesh for fork_board_camera when the macro supports a visual mesh."
+  choices: ["True", "true", "False", "false"]
+fork_board_camera_v_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution visual mesh for fork_board_camera when a visual mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+fork_board_camera_use_c_mesh:
+  default_value: "False"
+  description: "Use the collision mesh for fork_board_camera when the macro supports a collision mesh."
+  choices: ["True", "true", "False", "false"]
+fork_board_camera_c_mesh_use_low_res:
+  default_value: "True"
+  description: "Use the low-resolution collision mesh for fork_board_camera when a collision mesh is enabled."
+  choices: ["True", "true", "False", "false"]
+
+use_chassis_imu:
+  default_value: "True"
+  description: "If true, include the chassis IMU link, joint, and simulation plugin."
+  choices: ["True", "False"]

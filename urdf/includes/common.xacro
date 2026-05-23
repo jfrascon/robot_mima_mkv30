@@ -1,0 +1,346 @@
+<?xml version="1.0"?>
+<robot name="mima_mkv30_common" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="$(find robotics_description)/urdf/common/all_commons.xacro"/>
+  <xacro:include filename="$(find robotics_description)/urdf/wheels/all_wheels.xacro"/>
+  <xacro:include filename="$(find robot_mima_mkv30)/urdf/includes/fork_macro.xacro"/>
+
+  <xacro:arg name="use_sim_mode" default="False"/>
+  <xacro:arg name="sim_file"     default=""/>
+  <xacro:arg name="namespace"    default=""/>
+  <xacro:arg name="robot_name"   default="mima_mkv30"/>
+  <xacro:arg name="controller_config_file"
+             default="$(find robot_mima_mkv30)/config/model_base/example_controllers.yaml.in"/>
+
+  <!-- Chassis arguments. -->
+  <xacro:arg name="chassis_use_visual"    default="True"/>
+  <xacro:arg name="chassis_use_inertial"  default="True"/>
+
+  <!--
+  Steerable wheel arguments
+  Steerable wheel are located at the front of the vehicle.
+  -->
+  <xacro:arg name="s_wheel_use_v_mesh"                default="True"/>
+  <!--
+  Public MKV30 data from Eastlift/MiMA lists wheelbase y = 1700 mm and turning radius Wa = 2025 mm:
+  https://www.es-forklift.com/3-0-3-5-4-0T-Counterbalance-Forklift-MKV30-35-40-pd719691098.html
+  A simple Ackermann equivalent estimate gives
+  delta = atan(L / R) = atan(1.700 / 2.025) = 0.698 rad = 40 deg.
+  The default uses +/-45 deg as a small modeling margin until the mechanical steering limit is known.
+  -->
+  <xacro:arg name="s_wheel_steering_joint_limits"     default="-0.7853981633974483 0.7853981633974483 100.0 100000.0"/>
+  <xacro:arg name="s_wheel_steering_joint_dynamics"   default="0.001 0.001"/>
+  <xacro:arg name="s_wheel_rotation_joint_limits"     default="1000.0 1000.0"/>
+  <xacro:arg name="s_wheel_rotation_joint_dynamics"   default="0.001 0.001"/>
+
+  <!--
+  Wheel arguments
+  Wheel are located at the back of the vehicle.
+  -->
+  <xacro:arg name="wheel_use_visual"                  default="True"/>
+  <xacro:arg name="wheel_use_inertial"                default="True"/>
+  <xacro:arg name="wheel_use_v_mesh"                  default="True"/>
+  <xacro:arg name="wheel_rotation_joint_limits"       default="1000.0 1000.0"/>
+  <xacro:arg name="wheel_rotation_joint_dynamics"     default="0.001 0.001"/>
+
+  <!-- Fork arguments. -->
+  <xacro:arg name="fork_use_visual"                   default="True"/>
+  <xacro:arg name="fork_use_inertial"                 default="False"/>
+  <xacro:arg name="fork_mast_limits"                  default="-0.05 0.09 0.2 100000.0"/>
+  <xacro:arg name="fork_holder_limits"                default="0.0 3.0 0.2 100000.0"/>
+  <xacro:arg name="fork_board_limits"                 default="-0.075 0.075 0.2 100000.0"/>
+  <xacro:arg name="fork_board_motion_sign"            default="1"/>
+
+  <!--
+  PROPERTIES
+  -->
+
+  <xacro:property name="use_sim_mode" value="$(arg use_sim_mode)"/>
+  <xacro:property name="sim_file"     value="$(arg sim_file)"/>
+  <xacro:property name="sim_cfg"
+                  value="${xacro.load_yaml(sim_file) if use_sim_mode and sim_file != '' else dict()}"/>
+  <xacro:property name="namespace"    value="$(arg namespace)"/>
+  <xacro:property name="robot_name"   value="$(arg robot_name)"/>
+
+  <xacro:make_namespace prop_id="robot_namespace" namespace="${namespace}" name="${robot_name}"/>
+  <xacro:make_prefix prop_id="robot_prefix" name="${robot_name}"/>
+
+  <!-- Wheel kinematic model properties. -->
+  <xacro:property name="wheelbase"                value="1.700"/>
+  <xacro:property name="front_wheel_track"        value="0.780"/>
+  <xacro:property name="rear_wheel_track"         value="1.1"/>
+
+  <!-- Chassis fixed model properties. -->
+  <xacro:property name="chassis_color"           value="0 0 0.8 1.0"/>
+  <xacro:property name="chassis_use_visual"      value="$(arg chassis_use_visual)"/>
+  <xacro:property name="chassis_use_inertial"    value="$(arg chassis_use_inertial)"/>
+  <xacro:property name="chassis_size_x"          value="${wheelbase}"/>
+  <xacro:property name="chassis_size_y"          value="0.7"/>
+  <xacro:property name="chassis_size_z"          value="1.5"/>
+  <xacro:property name="chassis_mass"            value="3500.0"/>
+
+  <!-- Steerable wheel launch-facing properties. -->
+  <xacro:property name="s_wheel_use_v_mesh"              value="$(arg s_wheel_use_v_mesh)"/>
+  <xacro:property name="s_wheel_color"                   value="0 1 0 1"/>
+  <xacro:property name="s_wheel_steering_joint_limits"   value="$(arg s_wheel_steering_joint_limits)"/>
+  <xacro:property name="s_wheel_steering_joint_dynamics" value="$(arg s_wheel_steering_joint_dynamics)"/>
+  <xacro:property name="s_wheel_rotation_joint_limits"   value="$(arg s_wheel_rotation_joint_limits)"/>
+  <xacro:property name="s_wheel_rotation_joint_dynamics" value="$(arg s_wheel_rotation_joint_dynamics)"/>
+  <xacro:property name="s_wheel_v_mesh"
+                  value="${'robotics_description/meshes/wheels/standard_wheels/rubber_wheel_3.stl' if s_wheel_use_v_mesh else ''}"/>
+  <!--
+  rubber_wheel_3.stl dimensions from MeshLab:
+  diameter = 0.355598 m.
+  thickness = 0.114300 m.
+
+  wheel_3.diameter = 2 * s_wheel_radius = 2 * 0.2285 = 0.457000 m.
+  wheel_3.thickness = 0.152 m.
+
+  sx = s_wheel_3.diameter / rubber_wheel_3_stl.diameter = 0.457000 / 0.355598 = 1.285159.
+  sy = sx
+  sz = s_wheel_3.thickness / rubber_wheel_3_stl.thickness = 0.152 / 0.114300 = 1.33
+  -->
+  <xacro:property name="s_wheel_v_mesh_scale"            value="1.2852 1.2852 1.33"/>
+  <xacro:property name="s_wheel_radius"                  value="0.2285"/>
+  <xacro:property name="s_wheel_width"                   value="0.152"/>
+  <xacro:property name="s_wheel_mass"                    value="100.0"/>
+
+  <!-- Wheel launch-facing properties. -->
+  <xacro:property name="wheel_use_visual"                value="$(arg wheel_use_visual)"/>
+  <xacro:property name="wheel_use_inertial"              value="$(arg wheel_use_inertial)"/>
+  <xacro:property name="wheel_use_v_mesh"                value="$(arg wheel_use_v_mesh)"/>
+  <xacro:property name="wheel_color"                     value="0 1 0 1"/>
+  <xacro:property name="wheel_rotation_joint_limits"     value="$(arg wheel_rotation_joint_limits)"/>
+  <xacro:property name="wheel_rotation_joint_dynamics"   value="$(arg wheel_rotation_joint_dynamics)"/>
+  <xacro:property name="wheel_v_mesh"
+                  value="${'robotics_description/meshes/wheels/standard_wheels/rubber_wheel_3.stl' if wheel_use_v_mesh else ''}"/>
+
+  <!--
+  rubber_wheel_3.stl dimensions from MeshLab:
+  diameter = 0.355598 m.
+  thickness = 0.114300 m.
+
+  wheel_3.diameter = 2 * wheel_radius = 2 * 0.2795 = 0.559000 m.
+  wheel_3.thickness = 0.203000 m.
+
+  sx = wheel_3.diameter / rubber_wheel_3_stl.diameter = 0.559000 / 0.355598 = 1.571999843
+  sy = sx
+  sz = wheel_3.thickness / rubber_wheel_3_stl.thickness = 0.203000 / 0.114300 = 1.776027997
+  -->
+  <xacro:property name="wheel_v_mesh_scale"              value="1.572 1.572 1.77603"/>
+  <xacro:property name="wheel_radius"                    value="0.2795"/>
+  <xacro:property name="wheel_width"                     value="0.203"/>
+  <xacro:property name="wheel_mass"                      value="100.0"/>
+
+  <!-- Fork launch-facing properties. -->
+  <xacro:property name="fork_mast_color"        value="1 0 0 1"/>
+  <xacro:property name="fork_board_color"       value="0 0 1 1"/>
+  <xacro:property name="fork_tine_color"        value="0 1 0 1"/>
+  <xacro:property name="fork_use_visual"        value="$(arg fork_use_visual)"/>
+  <xacro:property name="fork_use_inertial"      value="$(arg fork_use_inertial)"/>
+  <xacro:property name="fork_mast_limits"       value="$(arg fork_mast_limits)"/>
+  <xacro:property name="fork_holder_limits"     value="$(arg fork_holder_limits)"/>
+  <xacro:property name="fork_board_limits"      value="$(arg fork_board_limits)"/>
+  <xacro:property name="fork_board_motion_sign" value="$(arg fork_board_motion_sign)"/>
+
+  <!-- Fork fixed model properties. -->
+  <xacro:property name="fork_mass"           value="0.01"/>
+  <xacro:property name="fork_mast_size"      value="0.1 0.780 2.205"/>
+  <xacro:property name="fork_support_height" value="0.5"/>
+  <xacro:property name="fork_board_size"     value="0.1 1.1 ${fork_support_height}"/>
+  <xacro:property name="fork_tine_size"      value="1.15 0.125 0.045"/>
+  <xacro:property name="fork_y_left_tine"    value="0.2575"/>
+  <xacro:property name="fork_y_right_tine"   value="-0.1775"/>
+
+  <link name="${robot_prefix}base_footprint_link"/>
+  <link name="${robot_prefix}base_link"/>
+
+  <!--
+  ATTENTION:
+  TYPICALLY THE BASE_FOOTPRINT IS THE PARENT OF THE BASE_LINK, BUT IN THIS CASE, IT IS THE OTHER WAY
+  AROUND.
+  -->
+  <joint name="${robot_prefix}base_footprint_joint" type="fixed">
+    <parent link="${robot_prefix}base_footprint_link"/>
+    <child link="${robot_prefix}base_link"/>
+    <!--
+    steerable wheel at the front of the vehicle,
+    wheel at the back of the vehicle.
+    -->
+    <origin rpy="0 0 0" xyz="0 0 ${wheel_radius}"/>
+  </joint>
+
+  <link name="${robot_prefix}chassis_link">
+    <xacro:if value="${chassis_use_visual}">
+      <xacro:visual_box size="${chassis_size_x} ${chassis_size_y} ${chassis_size_z}"
+                        shape_origin="0 0 ${chassis_size_z * 0.5} 0 0 0"
+                        color="chassis_color ${chassis_color}"/>
+    </xacro:if>
+    <xacro:collision_box size="${chassis_size_x} ${chassis_size_y} ${chassis_size_z}"
+                         shape_origin="0 0 ${chassis_size_z * 0.5} 0 0 0"/>
+    <xacro:if value="${chassis_use_inertial}">
+      <xacro:solid_box_inertia mass="${chassis_mass}"
+                               size="${chassis_size_x} ${chassis_size_y} ${chassis_size_z}"
+                               origin="0 0 ${chassis_size_z * 0.5} 0 0 0"/>
+    </xacro:if>
+    <xacro:unless value="${chassis_use_inertial}">
+      <xacro:null_inertia/>
+    </xacro:unless>
+  </link>
+
+  <xacro:if value="${chassis_use_visual and chassis_color != '' and use_sim_mode}">
+    <gazebo reference="${robot_prefix}chassis_link">
+      <material>
+        <ambient>${chassis_color}</ambient>
+        <diffuse>${chassis_color}</diffuse>
+      </material>
+    </gazebo>
+  </xacro:if>
+
+  <joint name="${robot_prefix}chassis_joint" type="fixed">
+    <parent link="${robot_prefix}base_link"/>
+    <child link="${robot_prefix}chassis_link"/>
+    <origin rpy="0 0 0" xyz="${0.5 * chassis_size_x} 0 ${s_wheel_radius}"/>
+  </joint>
+
+  <xacro:property name="front_left_wheel_sim_cfg"
+                  value="${sim_cfg.get('front_left_wheel', dict())}"/>
+  <xacro:set_props_wheel_sim prop_prefix="front_left_wheel_sim"
+                             sim_cfg="${front_left_wheel_sim_cfg}"/>
+
+  <xacro:steerable_wheel
+    name="front_left_wheel"
+    prefix="${robot_prefix}"
+    parent_frame="${robot_prefix}base_link"
+    use_visual="${wheel_use_visual}"
+    use_inertial="${wheel_use_inertial}"
+    v_mesh="${s_wheel_v_mesh}"
+    v_mesh_scale="${s_wheel_v_mesh_scale}"
+    color="${s_wheel_color}"
+    radius="${s_wheel_radius}"
+    length="${s_wheel_width}"
+    mass="${s_wheel_mass}"
+    steering_joint_type="revolute"
+    steering_joint_limits="${s_wheel_steering_joint_limits}"
+    steering_joint_dynamics="${s_wheel_steering_joint_dynamics}"
+    rotation_joint_type="continuous"
+    rotation_joint_limits="${s_wheel_rotation_joint_limits}"
+    rotation_joint_dynamics="${s_wheel_rotation_joint_dynamics}"
+    joint_parent_fr_wheel_fr="${wheelbase} ${front_wheel_track * 0.5} ${-wheel_radius + s_wheel_radius} 0 0 0"
+    sim_enabled="${front_left_wheel_sim_enabled}"
+    sim_max_contacts="${front_left_wheel_sim_max_contacts}"
+    sim_mu="${front_left_wheel_sim_mu}"
+    sim_mu2="${front_left_wheel_sim_mu2}"
+    sim_slip1="${front_left_wheel_sim_slip1}"
+    sim_slip2="${front_left_wheel_sim_slip2}"/>
+
+  <xacro:property name="front_right_wheel_sim_cfg"
+                  value="${sim_cfg.get('front_right_wheel', dict())}"/>
+  <xacro:set_props_wheel_sim prop_prefix="front_right_wheel_sim"
+                             sim_cfg="${front_right_wheel_sim_cfg}"/>
+
+  <xacro:steerable_wheel
+    name="front_right_wheel"
+    prefix="${robot_prefix}"
+    parent_frame="${robot_prefix}base_link"
+    use_visual="${wheel_use_visual}"
+    use_inertial="${wheel_use_inertial}"
+    v_mesh="${s_wheel_v_mesh}"
+    v_mesh_scale="${s_wheel_v_mesh_scale}"
+    color="${s_wheel_color}"
+    radius="${s_wheel_radius}"
+    length="${s_wheel_width}"
+    mass="${s_wheel_mass}"
+    steering_joint_type="revolute"
+    steering_joint_limits="${s_wheel_steering_joint_limits}"
+    steering_joint_dynamics="${s_wheel_steering_joint_dynamics}"
+    rotation_joint_type="continuous"
+    rotation_joint_limits="${s_wheel_rotation_joint_limits}"
+    rotation_joint_dynamics="${s_wheel_rotation_joint_dynamics}"
+    joint_parent_fr_wheel_fr="${wheelbase} ${-front_wheel_track * 0.5} ${-wheel_radius + s_wheel_radius} 0 0 0"
+    sim_enabled="${front_right_wheel_sim_enabled}"
+    sim_max_contacts="${front_right_wheel_sim_max_contacts}"
+    sim_mu="${front_right_wheel_sim_mu}"
+    sim_mu2="${front_right_wheel_sim_mu2}"
+    sim_slip1="${front_right_wheel_sim_slip1}"
+    sim_slip2="${front_right_wheel_sim_slip2}"/>
+
+  <xacro:property name="rear_left_wheel_sim_cfg"
+                  value="${sim_cfg.get('rear_left_wheel', dict())}"/>
+  <xacro:set_props_wheel_sim prop_prefix="rear_left_wheel_sim"
+                             sim_cfg="${rear_left_wheel_sim_cfg}"/>
+
+  <xacro:wheel
+    name="rear_left_wheel"
+    prefix="${robot_prefix}"
+    parent_frame="${robot_prefix}base_link"
+    use_visual="${wheel_use_visual}"
+    use_inertial="${wheel_use_inertial}"
+    v_mesh="${wheel_v_mesh}"
+    v_mesh_scale="${wheel_v_mesh_scale}"
+    color="${wheel_color}"
+    radius="${wheel_radius}"
+    length="${wheel_width}"
+    mass="${wheel_mass}"
+    rotation_joint_type="continuous"
+    rotation_joint_limits="${wheel_rotation_joint_limits}"
+    rotation_joint_dynamics="${wheel_rotation_joint_dynamics}"
+    joint_parent_fr_wheel_fr="0 ${rear_wheel_track * 0.5} 0 0 0 0"
+    sim_enabled="${rear_left_wheel_sim_enabled}"
+    sim_max_contacts="${rear_left_wheel_sim_max_contacts}"
+    sim_mu="${rear_left_wheel_sim_mu}"
+    sim_mu2="${rear_left_wheel_sim_mu2}"
+    sim_slip1="${rear_left_wheel_sim_slip1}"
+    sim_slip2="${rear_left_wheel_sim_slip2}"
+    sim_fdir1="1 0 0"
+    sim_fdir1_frame="${robot_prefix}base_link"/>
+
+  <xacro:property name="rear_right_wheel_sim_cfg"
+                  value="${sim_cfg.get('rear_right_wheel', dict())}"/>
+  <xacro:set_props_wheel_sim prop_prefix="rear_right_wheel_sim"
+                             sim_cfg="${rear_right_wheel_sim_cfg}"/>
+
+  <xacro:wheel
+    name="rear_right_wheel"
+    prefix="${robot_prefix}"
+    parent_frame="${robot_prefix}base_link"
+    use_visual="${wheel_use_visual}"
+    use_inertial="${wheel_use_inertial}"
+    v_mesh="${wheel_v_mesh}"
+    v_mesh_scale="${wheel_v_mesh_scale}"
+    color="${wheel_color}"
+    radius="${wheel_radius}"
+    length="${wheel_width}"
+    mass="${wheel_mass}"
+    rotation_joint_type="continuous"
+    rotation_joint_limits="${wheel_rotation_joint_limits}"
+    rotation_joint_dynamics="${wheel_rotation_joint_dynamics}"
+    joint_parent_fr_wheel_fr="0 ${-rear_wheel_track * 0.5} 0 0 0 0"
+    sim_enabled="${rear_right_wheel_sim_enabled}"
+    sim_max_contacts="${rear_right_wheel_sim_max_contacts}"
+    sim_mu="${rear_right_wheel_sim_mu}"
+    sim_mu2="${rear_right_wheel_sim_mu2}"
+    sim_slip1="${rear_right_wheel_sim_slip1}"
+    sim_slip2="${rear_right_wheel_sim_slip2}"
+    sim_fdir1="1 0 0"
+    sim_fdir1_frame="${robot_prefix}base_link"/>
+
+  <xacro:fork prefix="${robot_prefix}"
+              name="fork"
+              parent_link="${robot_prefix}base_link"
+              use_visual="${fork_use_visual}"
+              use_inertial="${fork_use_inertial}"
+              mass="${fork_mass}"
+              mast_color="${fork_mast_color}"
+              mast_size="${fork_mast_size}"
+              mast_limits="${fork_mast_limits}"
+              holder_limits="${fork_holder_limits}"
+              board_color="${fork_board_color}"
+              board_size="${fork_board_size}"
+              board_motion_sign="${fork_board_motion_sign}"
+              board_limits="${fork_board_limits}"
+              tine_color="${fork_tine_color}"
+              tine_size="${fork_tine_size}"
+              joint_parent_fr_root_fr="-0.25 0 ${-fork_support_height * 0.5} 0 0 ${pi}"
+              y_left_tine="${fork_y_left_tine}"
+              y_right_tine="${fork_y_right_tine}"/>
+</robot>

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<robot name="mima_mkv30_base" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:include filename="$(find robot_mima_mkv30)/urdf/includes/common.xacro"/>
+  <xacro:include filename="$(find robot_mima_mkv30)/urdf/includes/ros2_control_sim_macro.xacro"/>
+  <xacro:include filename="$(find robot_mima_mkv30)/urdf/includes/ros2_control_real_macro.xacro"/>
+
+  <!--
+  ##############################################################################
+  # ros2_control.
+  ##############################################################################
+  -->
+  <xacro:if value="${use_sim_mode}">
+    <xacro:ros2_control_sim
+      controller_config_file="$(arg controller_config_file)"
+      robot_namespace="${robot_namespace}"/>
+  </xacro:if>
+</robot>

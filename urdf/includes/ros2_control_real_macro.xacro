@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<robot name="mima_mkv30_ros2_control_real_macro" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="mima_mkv30_ros2_control_real" params="controller_config_file">
+    <!--
+    Placeholder for real ros2_control integration.
+
+    This package does not define a real hardware plugin yet. When a hardware
+    plugin exists, this macro should define the real <ros2_control> block and
+    the real launch path can start ros2_control_node.
+    -->
+  </xacro:macro>
+</robot>

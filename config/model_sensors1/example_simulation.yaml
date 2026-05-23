@@ -1,0 +1,376 @@
+################################################################################
+# Front left wheel uses Gazebo contact/friction parameters.
+################################################################################
+front_left_wheel:
+  enabled: true
+  max_contacts: 10
+  mu: 1.0
+  mu2: 1.0
+  slip1: 0.0
+  slip2: 0.0
+
+################################################################################
+# Front right wheel uses Gazebo contact/friction parameters.
+################################################################################
+front_right_wheel:
+  enabled: true
+  max_contacts: 10
+  mu: 1.0
+  mu2: 1.0
+  slip1: 0.0
+  slip2: 0.0
+
+################################################################################
+# Back left wheel uses Gazebo contact/friction parameters.
+################################################################################
+rear_left_wheel:
+  enabled: true
+  max_contacts: 10
+  mu: 1.0
+  mu2: 1.0
+  slip1: 0.0
+  slip2: 0.0
+
+################################################################################
+# Back right wheel uses Gazebo contact/friction parameters.
+################################################################################
+rear_right_wheel:
+  enabled: true
+  max_contacts: 10
+  mu: 1.0
+  mu2: 1.0
+  slip1: 0.0
+  slip2: 0.0
+
+################################################################################
+# Front 2D LiDAR is a Leuze RSL400.
+################################################################################
+front_lidar2d:
+  enabled: true
+  use_gravity: true
+  always_on: true
+  visualize: false
+  update_rate: 20.0
+  hor_fov_deg: {"min_angle": -90, "max_angle": 90}
+  hor_res_deg: 0.05
+  dist_span: {"min_dist": 0.1, "max_dist": 25.0}
+  dist_res: 0.015
+  gaussian_noise: {"mean": 0.0, "stddev": 0.01}
+  topic: front_lidar2d/scan
+
+################################################################################
+# Back 2D LiDAR is a Leuze RSL400.
+################################################################################
+back_lidar2d:
+  enabled: true
+  use_gravity: true
+  always_on: true
+  visualize: false
+  update_rate: 20.0
+  hor_fov_deg: {"min_angle": -90, "max_angle": 90}
+  hor_res_deg: 0.05
+  dist_span: {"min_dist": 0.1, "max_dist": 25.0}
+  dist_res: 0.015
+  gaussian_noise: {"mean": 0.0, "stddev": 0.01}
+  topic: back_lidar2d/scan
+
+################################################################################
+# Left 2D LiDAR is a Leuze RSL400.
+################################################################################
+left_lidar2d:
+  enabled: true
+  use_gravity: true
+  always_on: true
+  visualize: false
+  update_rate: 20.0
+  hor_fov_deg: {"min_angle": -90, "max_angle": 90}
+  hor_res_deg: 0.05
+  dist_span: {"min_dist": 0.1, "max_dist": 25.0}
+  dist_res: 0.015
+  gaussian_noise: {"mean": 0.0, "stddev": 0.01}
+  topic: left_lidar2d/scan
+
+################################################################################
+# Right 2D LiDAR is a Leuze RSL400.
+################################################################################
+right_lidar2d:
+  enabled: true
+  use_gravity: true
+  always_on: true
+  visualize: false
+  update_rate: 20.0
+  hor_fov_deg: {"min_angle": -90, "max_angle": 90}
+  hor_res_deg: 0.05
+  dist_span: {"min_dist": 0.1, "max_dist": 25.0}
+  dist_res: 0.015
+  gaussian_noise: {"mean": 0.0, "stddev": 0.01}
+  topic: right_lidar2d/scan
+
+################################################################################
+# Front top LiDAR is a Robosense Airy with integrated IMU.
+################################################################################
+# Configuration for the `gpu_lidar` Gazebo plugin.
+front_top_lidar3d:
+  enabled: true
+  always_on: true
+  visualize: false
+  update_rate: 10.0
+  hor_fov_deg: {"min_angle": -180, "max_angle": 180}
+  hor_res_deg: 0.4
+  ver_fov_deg: {"min_angle": 0, "max_angle": 90}
+  ver_res_deg: 0.947
+  dist_span: {"min_dist": 0.1, "max_dist": 60}   # m
+  gaussian_noise: {"mean": 0, "stddev": 0.01}
+  # The Gazebo plugin will publish two topics:
+  # Topic <base_topic> with messages of type gz.msgs.LaserScan
+  # Topic <base_topic>/points with messages of type gz.msgs.PointCloudPacked
+  base_topic: front_top_lidar3d/scan
+
+# Configuration for the integrated `imu` Gazebo plugin.
+front_top_lidar3d_imu:
+  enabled: true
+  use_gravity: true
+  always_on: true
+  update_rate: 100.0
+  ang_vel_gaussian_noise:
+    mean_x: 0.0
+    stddev_x: 0.0002
+    mean_y: 0.0
+    stddev_y: 0.0002
+    mean_z: 0.0
+    stddev_z: 0.0002
+  ang_vel_gaussian_noise_bias:
+    mean_x: 0.0000075
+    stddev_x: 8e-7
+    mean_y: 0.0000075
+    stddev_y: 8e-7
+    mean_z: 0.0000075
+    stddev_z: 8e-7
+  ang_vel_gaussian_noise_dynamic_bias:
+    stddev_x: 0.0
+    corr_time_x: 0.0
+    stddev_y: 0.0
+    corr_time_y: 0.0
+    stddev_z: 0.0
+    corr_time_z: 0.0
+  lin_acc_gaussian_noise:
+    mean_x: 0.0
+    stddev_x: 0.017
+    mean_y: 0.0
+    stddev_y: 0.017
+    mean_z: 0.0
+    stddev_z: 0.017
+  lin_acc_gaussian_noise_bias:
+    mean_x: 0.1
+    stddev_x: 0.001
+    mean_y: 0.1
+    stddev_y: 0.001
+    mean_z: 0.1
+    stddev_z: 0.001
+  lin_acc_gaussian_noise_dynamic_bias:
+    stddev_x: 0.0
+    corr_time_x: 0.0
+    stddev_y: 0.0
+    corr_time_y: 0.0
+    stddev_z: 0.0
+    corr_time_z: 0.0
+  use_orientation: true
+  topic: front_top_lidar3d/imu/data # published
+
+################################################################################
+# Left top LiDAR is a Robosense M1 Plus.
+################################################################################
+# Configuration for the `gpu_lidar` Gazebo plugin.
+left_top_lidar3d:
+  enabled: true
+  always_on: true
+  visualize: false
+  update_rate: 10.0
+  # The M1 Plus guide gives horizontal FOV 120 deg, from -60 deg to +60 deg.
+  hor_fov_deg: {"min_angle": -60.0, "max_angle": 60.0}
+  # The M1 Plus guide says angular resolution is not uniform and gives 0.2 deg average.
+  hor_res_deg: 0.2
+  # The M1 Plus guide gives vertical FOV 25 deg, from -12.5 deg to +12.5 deg.
+  ver_fov_deg: {"min_angle": -12.5, "max_angle": 12.5}
+  # The M1 Plus guide says angular resolution is not uniform and gives 0.2 deg average.
+  ver_res_deg: 0.2
+  # The M1 Plus guide gives 200 m maximum range. This simulation example uses 100 m
+  # to keep the simulated range conservative for typical indoor forklift scenes.
+  dist_span: {"min_dist": 0.5, "max_dist": 100.0} # m
+  # The M1 Plus guide states that radial distance resolution is 5 mm.
+  dist_res: 0.005
+  # The M1 Plus guide does not provide a simulation noise model.
+  gaussian_noise: {"mean": 0.0, "stddev": 0.0}
+  # The Gazebo plugin will publish two topics:
+  # Topic <base_topic> with messages of type gz.msgs.LaserScan
+  # Topic <base_topic>/points with messages of type gz.msgs.PointCloudPacked
+  base_topic: left_top_lidar3d/scan
+
+################################################################################
+# Chassis IMU is a generic box IMU mounted on base_link.
+################################################################################
+chassis_imu:
+  enabled: true
+  use_gravity: true
+  always_on: true
+  update_rate: 100.0
+  ang_vel_gaussian_noise:
+    mean_x: 0.0
+    stddev_x: 0.001
+    mean_y: 0.0
+    stddev_y: 0.001
+    mean_z: 0.0
+    stddev_z: 0.001
+  ang_vel_gaussian_noise_bias:
+    mean_x: 0.0
+    stddev_x: 0.0
+    mean_y: 0.0
+    stddev_y: 0.0
+    mean_z: 0.0
+    stddev_z: 0.0
+  ang_vel_gaussian_noise_dynamic_bias:
+    stddev_x: 0.0
+    corr_time_x: 0.0
+    stddev_y: 0.0
+    corr_time_y: 0.0
+    stddev_z: 0.0
+    corr_time_z: 0.0
+  lin_acc_gaussian_noise:
+    mean_x: 0.0
+    stddev_x: 0.1
+    mean_y: 0.0
+    stddev_y: 0.1
+    mean_z: 0.0
+    stddev_z: 0.1
+  lin_acc_gaussian_noise_bias:
+    mean_x: 0.0
+    stddev_x: 0.0
+    mean_y: 0.0
+    stddev_y: 0.0
+    mean_z: 0.0
+    stddev_z: 0.0
+  lin_acc_gaussian_noise_dynamic_bias:
+    stddev_x: 0.0
+    corr_time_x: 0.0
+    stddev_y: 0.0
+    corr_time_y: 0.0
+    stddev_z: 0.0
+    corr_time_z: 0.0
+  use_orientation: true
+  topic: chassis_imu/data
+
+################################################################################
+# Fork board camera is an Orbbec Gemini 335Le RGB-D camera.
+################################################################################
+# This variant uses one Gazebo rgbd_camera plugin for color, depth, point cloud,
+# and camera_info. It uses the depth FOV because the plugin has one shared lens
+# model. The two infrared streams and the IMU remain separate simulated sensors.
+fork_board_camera_rgbd:
+  enabled: true
+  use_gravity: true
+  always_on: true
+  visualize: false
+  enable_metrics: false
+  save: {enabled: false, path: /tmp/fork_board_camera_rgbd}
+  triggered: false
+  visible_mask: 4294967295
+  update_rate: 30.0
+  image: {width: 640, height: 400, format: R8G8B8, anti_aliasing: 4}
+  lens_single_elements:
+    type: gnomonical
+    scale_to_hfov: true
+    cutoff_angle_deg: 90.0
+    env_texture_size: 256
+  lens_custom_function: ""
+  lens_intrinsics:
+    fx: 640.0
+    fy: 627.8
+    cx: 639.5
+    cy: 399.5
+  lens_xy_skew: 0.0
+  lens_projection: ""
+  distortion_k_p: {k1: 0.0, k2: 0.0, k3: 0.0, p1: 0.0, p2: 0.0}
+  distortion_center: {center_x_norm: 0.5, center_y_norm: 0.5}
+  gaussian_noise: {mean: 0.0, stddev: 0.0}
+  clip: {near: 0.1, far: 10.0}
+  depth_clip: {near: 0.25, far: 10.0}
+  base_topic: fork_board_camera/rgbd
+  trigger_topic: ""
+
+fork_board_camera_left_ir:
+  enabled: false
+  use_gravity: true
+  always_on: true
+  visualize: false
+  enable_metrics: false
+  save: {enabled: false, path: /tmp/fork_board_camera_left_ir}
+  triggered: false
+  visible_mask: 4294967295
+  update_rate: 30.0
+  image: {width: 640, height: 400, format: L8, anti_aliasing: 4}
+  lens_single_elements:
+    type: gnomonical
+    scale_to_hfov: true
+    cutoff_angle_deg: 90.0
+    env_texture_size: 256
+  lens_custom_function: ""
+  lens_intrinsics:
+    fx: 640.0
+    fy: 627.8
+    cx: 639.5
+    cy: 399.5
+  lens_xy_skew: 0.0
+  lens_projection: ""
+  distortion_k_p: {k1: 0.0, k2: 0.0, k3: 0.0, p1: 0.0, p2: 0.0}
+  distortion_center: {center_x_norm: 0.5, center_y_norm: 0.5}
+  gaussian_noise: {mean: 0.0, stddev: 0.0}
+  clip: {near: 0.1, far: 10.0}
+  image_topic: fork_board_camera/left_ir/image
+  camera_info_topic: fork_board_camera/left_ir/camera_info
+  trigger_topic: ""
+
+fork_board_camera_right_ir:
+  enabled: false
+  use_gravity: true
+  always_on: true
+  visualize: false
+  enable_metrics: false
+  save: {enabled: false, path: /tmp/fork_board_camera_right_ir}
+  triggered: false
+  visible_mask: 4294967295
+  update_rate: 30.0
+  image: {width: 640, height: 400, format: L8, anti_aliasing: 4}
+  lens_single_elements:
+    type: gnomonical
+    scale_to_hfov: true
+    cutoff_angle_deg: 90.0
+    env_texture_size: 256
+  lens_custom_function: ""
+  lens_intrinsics:
+    fx: 640.0
+    fy: 627.8
+    cx: 639.5
+    cy: 399.5
+  lens_xy_skew: 0.0
+  lens_projection: ""
+  distortion_k_p: {k1: 0.0, k2: 0.0, k3: 0.0, p1: 0.0, p2: 0.0}
+  distortion_center: {center_x_norm: 0.5, center_y_norm: 0.5}
+  gaussian_noise: {mean: 0.0, stddev: 0.0}
+  clip: {near: 0.1, far: 10.0}
+  image_topic: fork_board_camera/right_ir/image
+  camera_info_topic: fork_board_camera/right_ir/camera_info
+  trigger_topic: ""
+
+fork_board_camera_imu:
+  enabled: true
+  use_gravity: true
+  always_on: true
+  update_rate: 100.0
+  use_orientation: true
+  ang_vel_gaussian_noise: {mean_x: 0.0, stddev_x: 0.0, mean_y: 0.0, stddev_y: 0.0, mean_z: 0.0, stddev_z: 0.0}
+  ang_vel_gaussian_noise_bias: {mean_x: 0.0, stddev_x: 0.0, mean_y: 0.0, stddev_y: 0.0, mean_z: 0.0, stddev_z: 0.0}
+  ang_vel_gaussian_noise_dynamic_bias: {stddev_x: 0.0, corr_time_x: 0.0, stddev_y: 0.0, corr_time_y: 0.0, stddev_z: 0.0, corr_time_z: 0.0}
+  lin_acc_gaussian_noise: {mean_x: 0.0, stddev_x: 0.0, mean_y: 0.0, stddev_y: 0.0, mean_z: 0.0, stddev_z: 0.0}
+  lin_acc_gaussian_noise_bias: {mean_x: 0.0, stddev_x: 0.0, mean_y: 0.0, stddev_y: 0.0, mean_z: 0.0, stddev_z: 0.0}
+  lin_acc_gaussian_noise_dynamic_bias: {stddev_x: 0.0, corr_time_x: 0.0, stddev_y: 0.0, corr_time_y: 0.0, stddev_z: 0.0, corr_time_z: 0.0}
+  topic: fork_board_camera/imu/data

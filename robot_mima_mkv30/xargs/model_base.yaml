@@ -1,0 +1,81 @@
+# All xacro argument values in this file are stored as strings.
+# Fixed model dimensions stay in Xacro properties, not in this launch-facing YAML.
+
+sim_file:
+  default_value: ""
+  description: "Path to the simulation YAML. If empty, wheel Gazebo contact/friction blocks are not added."
+
+controller_config_file:
+  default_value: "package://robot_mima_mkv30/config/model_base/example_controllers.yaml.in"
+  description: "Path to a controller YAML template. The launch file resolves @robot_prefix@ before passing it to xacro."
+
+# Chassis.
+chassis_use_visual:
+  default_value: "True"
+  description: "Use visual elements for the chassis. Collision elements are still included when this is False."
+  choices: ["True", "true", "False", "false"]
+chassis_use_inertial:
+  default_value: "True"
+  description: "Use inertial elements for the chassis. If False, a null inertia is used."
+  choices: ["True", "true", "False", "false"]
+
+# Steerable wheels.
+s_wheel_use_v_mesh:
+  default_value: "True"
+  description: "Use the built-in steerable wheel visual mesh. If False, use the wheel primitive cylinder."
+  choices: ["True", "true", "False", "false"]
+s_wheel_steering_joint_limits:
+  default_value: "-0.7853981633974483 0.7853981633974483 100.0 100000.0"
+  description: "Steerable wheel steering joint limits as 'lower upper velocity effort'. The public MKV30 wheelbase and turning-radius estimate gives about +/-40 deg; the default uses +/-45 deg as an initial modeling margin."
+s_wheel_steering_joint_dynamics:
+  default_value: "0.001 0.001"
+  description: "Steerable wheel steering joint dynamics as 'damping friction'."
+s_wheel_rotation_joint_limits:
+  default_value: "1000.0 1000.0"
+  description: "Steerable wheel rotation joint limits as 'velocity effort'."
+s_wheel_rotation_joint_dynamics:
+  default_value: "0.001 0.001"
+  description: "Steerable wheel rotation joint dynamics as 'damping friction'."
+
+# Wheels.
+wheel_use_visual:
+  default_value: "True"
+  description: "Use visual elements for all wheels. Collision elements are still included when this is False."
+  choices: ["True", "true", "False", "false"]
+wheel_use_v_mesh:
+  default_value: "True"
+  description: "Use the built-in wheel visual mesh. If False, use the wheel primitive cylinder."
+  choices: ["True", "true", "False", "false"]
+wheel_use_inertial:
+  default_value: "True"
+  description: "Use inertial elements for all wheels. If False, null inertias are used."
+  choices: ["True", "true", "False", "false"]
+wheel_rotation_joint_limits:
+  default_value: "1000.0 1000.0"
+  description: "Wheel rotation joint limits as 'velocity effort'."
+wheel_rotation_joint_dynamics:
+  default_value: "0.001 0.001"
+  description: "Wheel rotation joint dynamics as 'damping friction'."
+
+# Fork.
+fork_use_visual:
+  default_value: "True"
+  description: "Use visual elements for the fork. Collision elements are still included when this is False."
+  choices: ["True", "true", "False", "false"]
+fork_use_inertial:
+  default_value: "False"
+  description: "Use inertial elements for mast, carriage and forks. If False, null inertias are used."
+  choices: ["True", "true", "False", "false"]
+fork_mast_limits:
+  default_value: "-0.05 0.09 0.2 100000.0"
+  description: "Mast tilt joint limits as 'lower upper velocity effort'."
+fork_holder_limits:
+  default_value: "0.0 3.0 0.2 100000.0"
+  description: "Fork holder lift joint limits as 'lower upper velocity effort'."
+fork_board_limits:
+  default_value: "-0.075 0.075 0.2 100000.0"
+  description: "Fork board lateral shift joint limits as 'lower upper velocity effort'."
+fork_board_motion_sign:
+  default_value: "1"
+  description: "Fork board lateral motion axis sign. Use 1 or -1."
+  choices: ["1", "-1"]

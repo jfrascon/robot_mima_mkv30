@@ -1,0 +1,229 @@
+<?xml version="1.0"?>
+<robot name="fork_macro" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="fork"
+                params="prefix
+                        name
+                        parent_link
+                        mast_color
+                        board_color
+                        tine_color
+                        use_visual
+                        use_inertial
+                        holder_limits
+                        board_limits
+                        mast_size
+                        mast_limits
+                        board_size
+                        tine_size
+                        board_motion_sign
+                        y_left_tine
+                        y_right_tine
+                        joint_parent_fr_root_fr
+                        mass">
+    <xacro:property name="mast_limits_seq" value="${str(mast_limits).split()}"/>
+
+    <xacro:if value="${len(mast_limits_seq) != 4}">
+      ${xacro.fatal("fork: mast_limits must have 4 elements: 'lower upper velocity effort'")}
+    </xacro:if>
+
+    <xacro:property name="mast_size_seq" value="${mast_size.split()}"/>
+
+    <xacro:if value="${len(mast_size_seq) != 3}">
+      ${xacro.fatal("fork: mast_size must have 3 elements: 'len_x len_y len_z'")}
+    </xacro:if>
+
+    <xacro:property name="tine_size_seq" value="${tine_size.split()}"/>
+
+    <xacro:if value="${len(tine_size_seq) != 3}">
+      ${xacro.fatal("fork: tine_size must have 3 elements: 'len_x len_y len_z'")}
+    </xacro:if>
+
+    <xacro:property name="board_size_seq" value="${board_size.split()}"/>
+
+    <xacro:if value="${len(board_size_seq) != 3}">
+      ${xacro.fatal("fork: board_size must have 3 elements: 'len_x len_y len_z'")}
+    </xacro:if>
+
+    <xacro:property name="root_pose" value="${joint_parent_fr_root_fr.split()}"/>
+
+    <xacro:if value="${len(root_pose) != 6}">
+      ${xacro.fatal("fork: joint_parent_fr_root_fr must have 6 elements: 'x y z roll pitch yaw'")}
+    </xacro:if>
+
+    <link name="${prefix}${name}_mast_link">
+      <xacro:if value="${use_visual}">
+        <xacro:visual_box size="${mast_size_seq[0]} ${mast_size_seq[1]} ${mast_size_seq[2]}"
+                          shape_origin="0 0 ${float(mast_size_seq[2]) * 0.5} 0 0 0"
+                          color="${prefix}${name}_mast_color ${mast_color}"/>
+      </xacro:if>
+      <xacro:collision_box size="${mast_size_seq[0]} ${mast_size_seq[1]} ${mast_size_seq[2]}"
+                           shape_origin="0 0 ${float(mast_size_seq[2]) * 0.5} 0 0 0"/>
+      <xacro:if value="${use_inertial}">
+        <xacro:solid_box_inertia mass="${mass}"
+                                 size="${mast_size_seq[0]} ${mast_size_seq[1]} ${mast_size_seq[2]}"
+                                 origin="0 0 ${float(mast_size_seq[2]) * 0.5} 0 0 0"/>
+      </xacro:if>
+      <xacro:unless value="${use_inertial}">
+        <xacro:null_inertia/>
+      </xacro:unless>
+    </link>
+
+    <xacro:if value="${use_visual and mast_color != ''}">
+      <gazebo reference="${prefix}${name}_mast_link">
+        <material>
+          <ambient>${mast_color}</ambient>
+          <diffuse>${mast_color}</diffuse>
+        </material>
+      </gazebo>
+    </xacro:if>
+
+    <!-- tilt -->
+    <joint name="${prefix}${name}_mast_joint" type="revolute">
+      <parent link="${parent_link}"/>
+      <child link="${prefix}${name}_mast_link"/>
+      <origin rpy="${root_pose[3]} ${root_pose[4]} ${root_pose[5]}"
+              xyz="${root_pose[0]} ${root_pose[1]} ${root_pose[2]}"/>
+      <axis xyz="0 1 0"/>
+      <limit lower="${mast_limits_seq[0]}"
+             upper="${mast_limits_seq[1]}"
+             velocity="${mast_limits_seq[2]}"
+             effort="${mast_limits_seq[3]}"/>
+    </joint>
+
+    <xacro:property name="holder_limits_seq" value="${str(holder_limits).split()}"/>
+
+    <xacro:if value="${len(holder_limits_seq) != 4}">
+      ${xacro.fatal("fork: holder_limits must have 4 elements: 'lower upper velocity effort'")}
+    </xacro:if>
+
+    <link name="${prefix}${name}_holder_link">
+      <xacro:null_inertia/>
+    </link>
+
+    <!-- lift -->
+    <joint name="${prefix}${name}_holder_joint" type="prismatic">
+      <parent link="${prefix}${name}_mast_link"/>
+      <child link="${prefix}${name}_holder_link"/>
+      <origin xyz="0.0 0 0" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="${holder_limits_seq[0]}"
+             upper="${holder_limits_seq[1]}"
+             velocity="${holder_limits_seq[2]}"
+             effort="${holder_limits_seq[3]}"/>
+    </joint>
+
+    <xacro:property name="board_limits_seq" value="${str(board_limits).split()}"/>
+
+    <xacro:if value="${len(board_limits_seq) != 4}">
+      ${xacro.fatal("fork: board_limits must have 4 elements: 'lower upper velocity effort'")}
+    </xacro:if>
+
+    <link name="${prefix}${name}_board_link">
+      <xacro:if value="${use_visual}">
+        <xacro:visual_box size="${board_size_seq[0]} ${board_size_seq[1]} ${board_size_seq[2]}"
+                          shape_origin="${float(board_size_seq[0]) * 0.5} 0 ${float(board_size_seq[2]) * 0.5} 0 0 0"
+                          color="${prefix}${name}_board_color ${board_color}"/>
+      </xacro:if>
+      <xacro:collision_box size="${board_size_seq[0]} ${board_size_seq[1]} ${board_size_seq[2]}"
+                           shape_origin="${float(board_size_seq[0]) * 0.5} 0 ${float(board_size_seq[2]) * 0.5} 0 0 0"/>
+      <xacro:if value="${use_inertial}">
+        <xacro:solid_box_inertia mass="${mass}"
+                                 size="${board_size_seq[0]} ${board_size_seq[1]} ${board_size_seq[2]}"
+                                 origin="${float(board_size_seq[0]) * 0.5} 0 ${float(board_size_seq[2]) * 0.5} 0 0 0"/>
+      </xacro:if>
+      <xacro:unless value="${use_inertial}">
+        <xacro:null_inertia/>
+      </xacro:unless>
+    </link>
+
+    <xacro:if value="${use_visual and board_color != ''}">
+      <gazebo reference="${prefix}${name}_board_link">
+        <material>
+          <ambient>${board_color}</ambient>
+          <diffuse>${board_color}</diffuse>
+        </material>
+      </gazebo>
+    </xacro:if>
+
+    <xacro:if value="${float(board_motion_sign) not in [-1.0, 1.0]}">
+      ${xacro.fatal("fork: board_motion_sign must be 1 or -1")}
+    </xacro:if>
+
+    <joint name="${prefix}${name}_board_joint" type="prismatic">
+      <parent link="${prefix}${name}_holder_link"/>
+      <child link="${prefix}${name}_board_link"/>
+      <origin xyz="${float(mast_size_seq[0]) * 0.5} 0 0" rpy="0 0 0"/>
+      <axis xyz="0 ${board_motion_sign} 0"/>
+      <limit lower="${board_limits_seq[0]}"
+             upper="${board_limits_seq[1]}"
+             velocity="${board_limits_seq[2]}"
+             effort="${board_limits_seq[3]}"/>
+    </joint>
+
+    <link name="${prefix}${name}_left_tine_link">
+      <xacro:if value="${use_visual}">
+        <xacro:visual_box size="${tine_size_seq[0]} ${tine_size_seq[1]} ${tine_size_seq[2]}"
+                          shape_origin="0 0 ${-float(tine_size_seq[2]) * 0.5} 0 0 0"
+                          color="${prefix}${name}_tine_color ${tine_color}"/>
+      </xacro:if>
+      <xacro:collision_box size="${tine_size_seq[0]} ${tine_size_seq[1]} ${tine_size_seq[2]}"
+                           shape_origin="0 0 ${-float(tine_size_seq[2]) * 0.5} 0 0 0"/>
+      <xacro:if value="${use_inertial}">
+        <xacro:solid_box_inertia mass="${mass}"
+                                 size="${tine_size_seq[0]} ${tine_size_seq[1]} ${tine_size_seq[2]}"
+                                 origin="0 0 ${-float(tine_size_seq[2]) * 0.5} 0 0 0"/>
+      </xacro:if>
+      <xacro:unless value="${use_inertial}">
+        <xacro:null_inertia/>
+      </xacro:unless>
+    </link>
+
+    <xacro:if value="${use_visual and tine_color != ''}">
+      <gazebo reference="${prefix}${name}_left_tine_link">
+        <material>
+          <ambient>${tine_color}</ambient>
+          <diffuse>${tine_color}</diffuse>
+        </material>
+      </gazebo>
+    </xacro:if>
+
+    <joint name="${prefix}${name}_left_tine_joint" type="fixed">
+      <parent link="${prefix}${name}_board_link"/>
+      <child link="${prefix}${name}_left_tine_link"/>
+      <origin xyz="${0.5 * (float(board_size_seq[0]) + float(tine_size_seq[0]))} ${y_left_tine} ${float(tine_size_seq[2])}" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${prefix}${name}_right_tine_link">
+      <xacro:if value="${use_visual}">
+        <xacro:visual_box size="${tine_size_seq[0]} ${tine_size_seq[1]} ${tine_size_seq[2]}"
+                          shape_origin="0 0 ${-float(tine_size_seq[2]) * 0.5} 0 0 0"
+                          color="${prefix}${name}_tine_color ${tine_color}"/>
+      </xacro:if>
+      <xacro:collision_box size="${tine_size_seq[0]} ${tine_size_seq[1]} ${tine_size_seq[2]}"
+                           shape_origin="0 0 ${-float(tine_size_seq[2]) * 0.5} 0 0 0"/>
+      <xacro:if value="${use_inertial}">
+        <xacro:solid_box_inertia mass="${mass}"
+                                 size="${tine_size_seq[0]} ${tine_size_seq[1]} ${tine_size_seq[2]}"
+                                 origin="0 0 ${-float(tine_size_seq[2]) * 0.5} 0 0 0"/>
+      </xacro:if>
+      <xacro:unless value="${use_inertial}">
+        <xacro:null_inertia/>
+      </xacro:unless>
+    </link>
+
+    <xacro:if value="${use_visual and tine_color != ''}">
+      <gazebo reference="${prefix}${name}_right_tine_link">
+        <material>
+          <ambient>${tine_color}</ambient>
+          <diffuse>${tine_color}</diffuse>
+        </material>
+      </gazebo>
+    </xacro:if>
+
+    <joint name="${prefix}${name}_right_tine_joint" type="fixed">
+      <parent link="${prefix}${name}_board_link"/>
+      <child link="${prefix}${name}_right_tine_link"/>
+      <origin xyz="${0.5 * (float(board_size_seq[0]) + float(tine_size_seq[0]))} ${y_right_tine} ${float(tine_size_seq[2])}" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+</robot>

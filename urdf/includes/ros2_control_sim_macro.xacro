@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<robot name="ros2_control_sim_macro" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="ros2_control_sim" params="controller_config_file robot_namespace">
+    <ros2_control name="GazeboSimSystem" type="system">
+      <hardware>
+        <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+      </hardware>
+
+      <xacro:property name="rc_s_wheel_steering_joint_limits_seq"
+                      value="${str(s_wheel_steering_joint_limits).split()}"/>
+
+      <xacro:property name="rc_wheel_rotation_joint_limits_seq"
+                      value="${str(wheel_rotation_joint_limits).split()}"/>
+
+      <xacro:property name="rc_fork_mast_limits_seq"
+                      value="${str(fork_mast_limits).split()}"/>
+
+      <xacro:property name="rc_fork_holder_limits_seq"
+                      value="${str(fork_holder_limits).split()}"/>
+
+      <xacro:property name="rc_fork_board_limits_seq"
+                      value="${str(fork_board_limits).split()}"/>
+
+      <joint name="${robot_prefix}front_left_wheel_steering_joint">
+        <command_interface name="position">
+          <param name="min">${rc_s_wheel_steering_joint_limits_seq[0]}</param>
+          <param name="max">${rc_s_wheel_steering_joint_limits_seq[1]}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${robot_prefix}front_right_wheel_steering_joint">
+        <command_interface name="position">
+          <param name="min">${rc_s_wheel_steering_joint_limits_seq[0]}</param>
+          <param name="max">${rc_s_wheel_steering_joint_limits_seq[1]}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${robot_prefix}front_left_wheel_rotation_joint">
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${robot_prefix}front_right_wheel_rotation_joint">
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${robot_prefix}rear_left_wheel_rotation_joint">
+        <command_interface name="velocity">
+          <param name="min">${-float(rc_wheel_rotation_joint_limits_seq[0])}</param>
+          <param name="max">${rc_wheel_rotation_joint_limits_seq[0]}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${robot_prefix}rear_right_wheel_rotation_joint">
+        <command_interface name="velocity">
+          <param name="min">${-float(rc_wheel_rotation_joint_limits_seq[0])}</param>
+          <param name="max">${rc_wheel_rotation_joint_limits_seq[0]}</param>
+        </command_interface>
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+
+      <joint name="${robot_prefix}fork_mast_joint">
+        <command_interface name="position">
+          <param name="min">${rc_fork_mast_limits_seq[0]}</param>
+          <param name="max">${rc_fork_mast_limits_seq[1]}</param>
+        </command_interface>
+        <state_interface name="position"/>
+      </joint>
+
+      <joint name="${robot_prefix}fork_holder_joint">
+        <command_interface name="position">
+          <param name="min">${rc_fork_holder_limits_seq[0]}</param>
+          <param name="max">${rc_fork_holder_limits_seq[1]}</param>
+        </command_interface>
+        <state_interface name="position"/>
+      </joint>
+
+      <joint name="${robot_prefix}fork_board_joint">
+        <command_interface name="position">
+          <param name="min">${rc_fork_board_limits_seq[0]}</param>
+          <param name="max">${rc_fork_board_limits_seq[1]}</param>
+        </command_interface>
+        <state_interface name="position"/>
+      </joint>
+    </ros2_control>
+
+    <gazebo>
+      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <ros>
+          <namespace>${robot_namespace}</namespace>
+        </ros>
+        <parameters>${controller_config_file}</parameters>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+</robot>

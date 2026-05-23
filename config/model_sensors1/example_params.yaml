@@ -1,0 +1,18 @@
+/**/robot_state_publisher:
+  ros__parameters:
+    use_sim_time: $(var use_sim_time)
+    publish_frequency: 20.0
+    ignore_timestamp: false # If True joint_state messages are accepted, no matter their timestamp
+    # PARAMETER `ROBOT_DESCRIPTION` IS MANAGED IN THE LAUNCH FILE, NOT HERE.
+    use_robot_description_topic: true
+    # PARAMETER `FRAME_PREFIX` IS ALWAYS USED AS AN EMPTY STRING IN THE LAUNCH FILE; ROBOT_PREFIX
+    #    IS MANAGED IN THE LAUNCH FILE.
+
+/**/bridge:
+  ros__parameters:
+    use_sim_time: $(var use_sim_time)
+    subscription_heartbeat: 1000
+    # PARAMETER `CONFIG_FILE` IS MANAGED IN THE LAUNCH FILE; NOT HERE.
+    expand_gz_topic_names: true
+    override_timestamps_with_wall_time: false
+    override_frame_id: ""
