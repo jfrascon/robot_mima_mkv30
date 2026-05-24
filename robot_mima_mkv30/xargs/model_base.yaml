@@ -2,7 +2,7 @@
 # Fixed model dimensions stay in Xacro properties, not in this launch-facing YAML.
 
 sim_file:
-  default_value: ""
+  default_value: "package://robot_mima_mkv30/config/model_base/example_simulation.yaml"
   description: "Path to the simulation YAML. If empty, wheel Gazebo contact/friction blocks are not added."
 
 controller_config_file:
