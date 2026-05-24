@@ -20,14 +20,14 @@ def generate_launch_description() -> LaunchDescription:
     ldes: list[LaunchDescriptionEntity] = [
         SetLaunchConfiguration('robot_type', 'mima_mkv30'),
         SetLaunchConfiguration('robot_model', ROBOT_MODEL),
-        DeclareLaunchArgument('project_namespace', default_value='', description="Project's namespace"),
+        DeclareLaunchArgument('namespace', default_value='', description="Project's namespace"),
         DeclareLaunchArgument('robot_name', default_value='mima_mkv30', description="Robot's name"),
         OpaqueFunction(
             function=rlh.set_robot_namespace,
             kwargs={
-                'namespace_key': 'project_namespace',
+                'namespace_key': 'namespace',
                 'robot_name_key': 'robot_name',
-                'robot_namespace_key': 'namespace',
+                'robot_namespace_key': 'robot_namespace',
             },
         ),
         OpaqueFunction(
@@ -131,7 +131,7 @@ def _include_bridge() -> IncludeLaunchDescription:
             PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_bridge.launch.py'])
         ),
         launch_arguments={
-            'project_namespace': LaunchConfiguration('project_namespace'),
+            'namespace': LaunchConfiguration('namespace'),
             'robot_name': LaunchConfiguration('robot_name'),
             'params_file': LaunchConfiguration('params_file'),
             'use_sim_time': LaunchConfiguration('use_sim_time'),
@@ -157,7 +157,7 @@ def _include_rsp() -> IncludeLaunchDescription:
             PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_rsp.launch.py'])
         ),
         launch_arguments={
-            'project_namespace': LaunchConfiguration('project_namespace'),
+            'namespace': LaunchConfiguration('namespace'),
             'robot_model': LaunchConfiguration('robot_model'),
             'robot_name': LaunchConfiguration('robot_name'),
             'params_file': LaunchConfiguration('params_file'),
@@ -185,7 +185,7 @@ def _include_ros2_control() -> IncludeLaunchDescription:
         launch_arguments={
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'controller_config_file': LaunchConfiguration('controller_config_file'),
-            'project_namespace': LaunchConfiguration('project_namespace'),
+            'namespace': LaunchConfiguration('namespace'),
             'robot_name': LaunchConfiguration('robot_name'),
             'robot_model': LaunchConfiguration('robot_model'),
             'controller_remappings': LaunchConfiguration('controller_remappings'),

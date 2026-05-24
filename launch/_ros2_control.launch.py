@@ -40,7 +40,7 @@ def generate_launch_description() -> LaunchDescription:
             DeclareLaunchArgument(
                 'controller_config_file', default_value='', description='Path to the prepared controller YAML file.'
             ),
-            DeclareLaunchArgument('project_namespace', default_value='', description='Project namespace'),
+            DeclareLaunchArgument('namespace', default_value='', description='Project namespace'),
             DeclareLaunchArgument(
                 'robot_name', default_value='mima_mkv30', description='The unique name for the robot'
             ),
@@ -56,9 +56,9 @@ def generate_launch_description() -> LaunchDescription:
             OpaqueFunction(
                 function=rlh.set_robot_namespace,
                 kwargs={
-                    'namespace_key': 'project_namespace',
+                    'namespace_key': 'namespace',
                     'robot_name_key': 'robot_name',
-                    'robot_namespace_key': 'namespace',
+                    'robot_namespace_key': 'robot_namespace',
                 },
             ),
             OpaqueFunction(
@@ -95,17 +95,17 @@ def _launch_ros2_control(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
 
     use_sim_time_lc = LaunchConfiguration('use_sim_time')
     use_sim_time_bool = perform_typed_substitution(ctx, normalize_typed_substitution(use_sim_time_lc, bool), bool)
-    namespace = LaunchConfiguration('namespace').perform(ctx).strip('/')
+    robot_namespace = LaunchConfiguration('robot_namespace').perform(ctx).strip('/')
 
-    if not namespace:
-        raise RuntimeError('namespace must contain the robot namespace.')
+    if not robot_namespace:
+        raise RuntimeError('robot_namespace cannot be empty')
 
     # The spawner accepts a controller manager node name. Use an absolute ROS name here so the
     # target controller manager is explicit and independent of the namespace in which the spawner
     # might be launched (there is no real need to launch the spawner in a specific namespace since
     # its lifetime is very short and it only serves to launch the controllers in the target
     # controller manager).
-    controller_manager = rlh.resolve_name('/', rlh.resolve_name(namespace, 'controller_manager'))
+    controller_manager = rlh.resolve_name('/', rlh.resolve_name(robot_namespace, 'controller_manager'))
 
     ldes: List[LaunchDescriptionEntity] = []
 
@@ -114,7 +114,7 @@ def _launch_ros2_control(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
             Node(
                 package='controller_manager',
                 executable='ros2_control_node',
-                namespace=LaunchConfiguration('namespace'),
+                namespace=LaunchConfiguration('robot_namespace'),
                 parameters=[controller_config_file, {'use_sim_time': use_sim_time_bool}],
                 output='screen',
             )

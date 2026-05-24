@@ -24,14 +24,14 @@ def generate_launch_description() -> LaunchDescription:
     external file is not loaded.
     """
     ldes: List[LaunchDescriptionEntity] = [
-        DeclareLaunchArgument('project_namespace', default_value='', description='Project namespace'),
+        DeclareLaunchArgument('namespace', default_value='', description='Project namespace'),
         DeclareLaunchArgument('robot_name', default_value='mima_mkv30', description='The unique name for the robot'),
         OpaqueFunction(
             function=rlh.set_robot_namespace,
             kwargs={
-                'namespace_key': 'project_namespace',
+                'namespace_key': 'namespace',
                 'robot_name_key': 'robot_name',
-                'robot_namespace_key': 'namespace',
+                'robot_namespace_key': 'robot_namespace',
             },
         ),
         OpaqueFunction(
@@ -157,7 +157,7 @@ def _launch_bridge(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
             package='ros_gz_bridge',
             executable='bridge_node',
             name=node_name,
-            namespace=LaunchConfiguration('namespace'),
+            namespace=LaunchConfiguration('robot_namespace'),
             parameters=parameters,
             ros_arguments=node_ros_arguments[node_name],
             output=node_options[node_name]['output'],

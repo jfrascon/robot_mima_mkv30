@@ -28,7 +28,7 @@ def generate_launch_description() -> LaunchDescription:
     external params file.
     """
     ldes: List[LaunchDescriptionEntity] = [
-        DeclareLaunchArgument('project_namespace', default_value='', description='Project namespace'),
+        DeclareLaunchArgument('namespace', default_value='', description='Project namespace'),
         DeclareLaunchArgument(
             'robot_model', default_value='base', choices=model_utils.get_models(), description='Robot model to publish'
         ),
@@ -36,9 +36,9 @@ def generate_launch_description() -> LaunchDescription:
         OpaqueFunction(
             function=rlh.set_robot_namespace,
             kwargs={
-                'namespace_key': 'project_namespace',
+                'namespace_key': 'namespace',
                 'robot_name_key': 'robot_name',
-                'robot_namespace_key': 'namespace',
+                'robot_namespace_key': 'robot_namespace',
             },
         ),
         OpaqueFunction(
@@ -106,7 +106,7 @@ def _build_xacro_command(ctx: LaunchContext) -> Tuple[List[Any], List[str]]:
         ' use_sim_mode:=',
         use_sim_time_lc,
         ' namespace:=',
-        LaunchConfiguration('project_namespace'),
+        LaunchConfiguration('namespace'),
         ' robot_name:=',
         LaunchConfiguration('robot_name'),
     ]
@@ -202,7 +202,7 @@ def _launch_rsp(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
             package='robot_state_publisher',
             executable='robot_state_publisher',
             name=node_name,
-            namespace=LaunchConfiguration('namespace'),
+            namespace=LaunchConfiguration('robot_namespace'),
             parameters=parameters,
             remappings=node_remappings[node_name],
             ros_arguments=node_ros_arguments[node_name],
