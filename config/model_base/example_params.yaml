@@ -16,3 +16,6 @@
     expand_gz_topic_names: true
     override_timestamps_with_wall_time: false
     override_frame_id: ""
+
+# Controllers have their own configuration file, that is passed as a launch argument to the
+# ros2_control_node when the robot is launched in real time or in simulation time.

@@ -184,6 +184,10 @@ def _include_ros2_control() -> IncludeLaunchDescription:
         ),
         launch_arguments={
             'use_sim_time': LaunchConfiguration('use_sim_time'),
+            # The launch argument `controller_config_file` is  Declared via the function
+            # `model_utils.declare_launch_arguments` based on the xacro arguments of the model.
+            # In this model an input to the xacro file, used in simulation time, is also an input
+            # to the ros2_control_node, when the model is launched in real time.
             'controller_config_file': LaunchConfiguration('controller_config_file'),
             'namespace': LaunchConfiguration('namespace'),
             'robot_name': LaunchConfiguration('robot_name'),
