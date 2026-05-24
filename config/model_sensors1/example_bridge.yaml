@@ -120,3 +120,17 @@
   direction: GZ_TO_ROS
   qos_profile: SENSOR_DATA
   lazy: true
+
+- topic_name: base_pose_ground_truth
+  ros_type_name: nav_msgs/msg/Odometry
+  gz_type_name: gz.msgs.OdometryWithCovariance
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- topic_name: tf_sim_world_fr_robot_root_fr
+  ros_type_name: tf2_msgs/msg/TFMessage
+  gz_type_name: gz.msgs.Pose_V
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: false

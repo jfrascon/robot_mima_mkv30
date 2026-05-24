@@ -374,3 +374,14 @@ fork_board_camera_imu:
   lin_acc_gaussian_noise_bias: {mean_x: 0.0, stddev_x: 0.0, mean_y: 0.0, stddev_y: 0.0, mean_z: 0.0, stddev_z: 0.0}
   lin_acc_gaussian_noise_dynamic_bias: {stddev_x: 0.0, corr_time_x: 0.0, stddev_y: 0.0, corr_time_y: 0.0, stddev_z: 0.0, corr_time_z: 0.0}
   topic: fork_board_camera/imu/data
+
+base_pose_ground_truth_publisher:
+  enabled: true
+  fixed_frame: map
+  offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
+  global_offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
+  gaussian_noise: 0.0
+  publication_frequency: 50.0
+  nav_topic_no_cov: base_pose_ground_truth_no_cov # published
+  nav_topic_cov: base_pose_ground_truth # published
+  tf_topic: tf_sim_world_fr_robot_root_fr # published

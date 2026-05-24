@@ -48,7 +48,9 @@ def generate_launch_description() -> LaunchDescription:
         ),
         DeclareLaunchArgument(
             'bridge_file',
-            default_value='',
+            default_value=os.path.join(
+                get_package_share_directory('robot_mima_mkv30'), 'config', f'model_{ROBOT_MODEL}', 'example_bridge.yaml'
+            ),
             description='Path to bridge file. If empty, the bridge node is not launched.',
         ),
     ]

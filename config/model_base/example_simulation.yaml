@@ -1,1 +1,10 @@
-{}
+base_pose_ground_truth_publisher:
+  enabled: true
+  fixed_frame: map
+  offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
+  global_offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
+  gaussian_noise: 0.0
+  publication_frequency: 50.0
+  nav_topic_no_cov: base_pose_ground_truth_no_cov # published
+  nav_topic_cov: base_pose_ground_truth # published
+  tf_topic: tf_sim_world_fr_robot_root_fr # published
