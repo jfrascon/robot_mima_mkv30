@@ -379,6 +379,8 @@ base_pose_ground_truth_publisher:
   enabled: true
   fixed_frame: map
   offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
+  # global_offset is only applied by Gazebo Sim 10 or newer.
+  # Older Gazebo Sim versions, including Gazebo Sim 8, ignore this field.
   global_offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
   gaussian_noise: 0.0
   publication_frequency: 50.0
