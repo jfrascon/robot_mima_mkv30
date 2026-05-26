@@ -9,8 +9,7 @@
   <xacro:arg name="sim_file"     default=""/>
   <xacro:arg name="namespace"    default=""/>
   <xacro:arg name="robot_name"   default="mima_mkv30"/>
-  <xacro:arg name="controller_config_file"
-             default="$(find robot_mima_mkv30)/config/model_base/example_controllers.yaml.in"/>
+  <xacro:arg name="controller_config_file" default=""/>
 
   <!-- Chassis arguments. -->
   <xacro:arg name="chassis_use_visual"    default="True"/>
@@ -169,68 +168,6 @@
     -->
     <origin rpy="0 0 0" xyz="0 0 ${wheel_radius}"/>
   </joint>
-
-  <xacro:property name="base_pose_ground_truth_publisher_sim_cfg"
-                  value="${sim_cfg.get('base_pose_ground_truth_publisher', dict())}"/>
-
-  <xacro:if value="${base_pose_ground_truth_publisher_sim_cfg.get('enabled', False)}">
-    <!--
-    Prepend the prefix `bpgtp_` to all properties related to the base pose ground
-    truth publisher Gazebo plugin, to avoid name conflicts with other Gazebo plugins.
-    -->
-    <xacro:property name="bpgtp_nav_topic_no_cov"
-                    value="${base_pose_ground_truth_publisher_sim_cfg.get('nav_topic_no_cov', '')}"/>
-
-    <xacro:property name="bpgtp_nav_topic_cov"
-                    value="${base_pose_ground_truth_publisher_sim_cfg.get('nav_topic_cov', '')}"/>
-
-    <xacro:property name="bpgtp_tf_topic"
-                    value="${base_pose_ground_truth_publisher_sim_cfg.get('tf_topic', '')}"/>
-
-    <!-- If one of the topics is empty, then the plugin is not loaded. -->
-    <xacro:if value="${bpgtp_nav_topic_cov != '' and bpgtp_nav_topic_no_cov != '' and bpgtp_tf_topic != ''}">
-      <xacro:resolve_topic prop_id="bpgtp_resolved_nav_topic_cov"
-                           topic="${bpgtp_nav_topic_cov}"
-                           namespace="${robot_namespace}"/>
-
-      <xacro:resolve_topic prop_id="bpgtp_resolved_nav_topic_no_cov"
-                           topic="${bpgtp_nav_topic_no_cov}"
-                           namespace="${robot_namespace}"/>
-
-      <xacro:resolve_topic prop_id="bpgtp_resolved_tf_topic"
-                           topic="${bpgtp_tf_topic}"
-                           namespace="${robot_namespace}"/>
-
-      <xacro:property name="bpgtp_fixed_frame"
-                      value="${base_pose_ground_truth_publisher_sim_cfg.get('fixed_frame', 'sim_world')}"/>
-
-      <xacro:property name="bpgtp_offset"
-                      value="${base_pose_ground_truth_publisher_sim_cfg.get('offset', dict(x=0, y=0, z=0, R=0, P=0, Y=0))}"/>
-
-      <xacro:property name="bpgtp_global_offset"
-                      value="${base_pose_ground_truth_publisher_sim_cfg.get('global_offset', dict(x=0, y=0, z=0, R=0, P=0, Y=0))}"/>
-
-      <xacro:property name="bpgtp_gaussian_noise"
-                      value="${base_pose_ground_truth_publisher_sim_cfg.get('gaussian_noise', 0)}"/>
-
-      <xacro:property name="bpgtp_publication_frequency"
-                      value="${base_pose_ground_truth_publisher_sim_cfg.get('publication_frequency', 50)}"/>
-
-      <xacro:plugin_odometry_publisher
-        odom_frame="${bpgtp_fixed_frame}"
-        robot_base_frame="${robot_prefix}base_footprint_link"
-        odom_publish_frequency="${bpgtp_publication_frequency}"
-        odom_topic="${bpgtp_resolved_nav_topic_no_cov}"
-        odom_covariance_topic="${bpgtp_resolved_nav_topic_cov}"
-        tf_topic="${bpgtp_resolved_tf_topic}"
-        dimensions="2"
-        xyz_offset="${bpgtp_offset['x']} ${bpgtp_offset['y']} ${bpgtp_offset['z']}"
-        rpy_offset="${bpgtp_offset['R']} ${bpgtp_offset['P']} ${bpgtp_offset['Y']}"
-        xyz_global_offset="${bpgtp_global_offset['x']} ${bpgtp_global_offset['y']} ${bpgtp_global_offset['z']}"
-        rpy_global_offset="${bpgtp_global_offset['R']} ${bpgtp_global_offset['P']} ${bpgtp_global_offset['Y']}"
-        gaussian_noise="${bpgtp_gaussian_noise}"/>
-    </xacro:if>
-  </xacro:if>
 
   <link name="${robot_prefix}chassis_link">
     <xacro:if value="${chassis_use_visual}">
@@ -406,4 +343,77 @@
               joint_parent_fr_root_fr="-0.25 0 ${-fork_support_height * 0.5} 0 0 ${pi}"
               y_left_tine="${fork_y_left_tine}"
               y_right_tine="${fork_y_right_tine}"/>
+
+  <xacro:if value="${use_sim_mode}">
+    <gazebo>
+      <!--
+      Insert the `OdometryPublisher` Gazebo plugin to publish the true pose of
+      the robot with respect to a selected fixed frame in Gazebo.
+      More details about this plugin in
+      package://robotics_description/urdf/gz_system_plugins/plugin_odometry_publisher_macro.xacro
+      -->
+      <xacro:property name="base_pose_ground_truth_publisher_sim_cfg"
+                      value="${sim_cfg.get('base_pose_ground_truth_publisher', dict())}"/>
+
+      <xacro:if value="${base_pose_ground_truth_publisher_sim_cfg.get('enabled', False)}">
+        <!--
+        Prepend the prefix `bpgtp_` to all properties related to the base pose
+        ground truth publisher Gazebo plugin, to avoid name conflicts with
+        other Gazebo plugins.
+        -->
+        <xacro:property name="bpgtp_nav_topic_no_cov"
+                        value="${base_pose_ground_truth_publisher_sim_cfg.get('nav_topic_no_cov', '')}"/>
+
+        <xacro:property name="bpgtp_nav_topic_cov"
+                        value="${base_pose_ground_truth_publisher_sim_cfg.get('nav_topic_cov', '')}"/>
+
+        <xacro:property name="bpgtp_tf_topic"
+                        value="${base_pose_ground_truth_publisher_sim_cfg.get('tf_topic', '')}"/>
+
+        <!-- If one of the topics is empty, then the plugin is not loaded. -->
+        <xacro:if value="${bpgtp_nav_topic_cov != '' and bpgtp_nav_topic_no_cov != '' and bpgtp_tf_topic != ''}">
+          <xacro:resolve_topic prop_id="bpgtp_resolved_nav_topic_cov"
+                               topic="${bpgtp_nav_topic_cov}"
+                               namespace="${robot_namespace}"/>
+
+          <xacro:resolve_topic prop_id="bpgtp_resolved_nav_topic_no_cov"
+                               topic="${bpgtp_nav_topic_no_cov}"
+                               namespace="${robot_namespace}"/>
+
+          <xacro:resolve_topic prop_id="bpgtp_resolved_tf_topic"
+                               topic="${bpgtp_tf_topic}"
+                               namespace="${robot_namespace}"/>
+
+          <xacro:property name="bpgtp_fixed_frame"
+                          value="${base_pose_ground_truth_publisher_sim_cfg.get('fixed_frame', 'sim_world')}"/>
+
+          <xacro:property name="bpgtp_offset"
+                          value="${base_pose_ground_truth_publisher_sim_cfg.get('offset', dict(x=0, y=0, z=0, R=0, P=0, Y=0))}"/>
+
+          <xacro:property name="bpgtp_global_offset"
+                          value="${base_pose_ground_truth_publisher_sim_cfg.get('global_offset', dict(x=0, y=0, z=0, R=0, P=0, Y=0))}"/>
+
+          <xacro:property name="bpgtp_gaussian_noise"
+                          value="${base_pose_ground_truth_publisher_sim_cfg.get('gaussian_noise', 0)}"/>
+
+          <xacro:property name="bpgtp_publication_frequency"
+                          value="${base_pose_ground_truth_publisher_sim_cfg.get('publication_frequency', 50)}"/>
+
+          <xacro:plugin_odometry_publisher
+            odom_frame="${bpgtp_fixed_frame}"
+            robot_base_frame="${robot_prefix}base_footprint_link"
+            odom_publish_frequency="${bpgtp_publication_frequency}"
+            odom_topic="${bpgtp_resolved_nav_topic_no_cov}"
+            odom_covariance_topic="${bpgtp_resolved_nav_topic_cov}"
+            tf_topic="${bpgtp_resolved_tf_topic}"
+            dimensions="2"
+            xyz_offset="${bpgtp_offset['x']} ${bpgtp_offset['y']} ${bpgtp_offset['z']}"
+            rpy_offset="${bpgtp_offset['R']} ${bpgtp_offset['P']} ${bpgtp_offset['Y']}"
+            xyz_global_offset="${bpgtp_global_offset['x']} ${bpgtp_global_offset['y']} ${bpgtp_global_offset['z']}"
+            rpy_global_offset="${bpgtp_global_offset['R']} ${bpgtp_global_offset['P']} ${bpgtp_global_offset['Y']}"
+            gaussian_noise="${bpgtp_gaussian_noise}"/>
+        </xacro:if>
+      </xacro:if>
+    </gazebo>
+  </xacro:if>
 </robot>

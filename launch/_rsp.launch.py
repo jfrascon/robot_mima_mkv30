@@ -124,6 +124,8 @@ def _build_xacro_command(ctx: LaunchContext) -> Tuple[List[Any], List[str]]:
             # without simulation time, the simulation file is not used.
             if not use_sim_time_bool:
                 value = ''
+            elif value:
+                value = rlh.resolve_file(value)
 
         cmd.extend([' ', f'{xarg_name}:=', _quote_xarg_value_if_needed(value)])
 

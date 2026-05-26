@@ -6,6 +6,7 @@ from conftest import PACKAGE_DIR
 from robot_mima_mkv30 import model_utils
 
 RESERVED_LAUNCH_ARGS = {'use_sim_mode', 'namespace', 'robot_name'}
+MODEL_SPECIFIC_DEFAULT_ARGS = {'sim_file', 'controller_config_file'}
 
 
 def _normalize_package_reference(value: str) -> str:
@@ -25,6 +26,7 @@ def _xacro_arg_names(xacro_file: Path) -> set[str]:
 def test_base_xargs_defaults_match_common_xacro_defaults() -> None:
     xacro_defaults = _xacro_arg_defaults(PACKAGE_DIR / 'urdf' / 'includes' / 'common.xacro')
     xacro_defaults = {k: v for k, v in xacro_defaults.items() if k not in RESERVED_LAUNCH_ARGS}
+    xacro_defaults = {k: v for k, v in xacro_defaults.items() if k not in MODEL_SPECIFIC_DEFAULT_ARGS}
 
     xargs = model_utils._get_xargs('base')
 
