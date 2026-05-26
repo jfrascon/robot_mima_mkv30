@@ -1,6 +1,6 @@
 /**/controller_manager:
   ros__parameters:
-    use_sim_time: @use_sim_time@
+    use_sim_time: $(var use_sim_time)
     update_rate: 50
 
     joint_state_broadcaster:
@@ -14,15 +14,15 @@
 
 /**/joint_state_broadcaster:
   ros__parameters:
-    use_sim_time: @use_sim_time@
-    frame_id: "@robot_prefix@base_link"
+    use_sim_time: $(var use_sim_time)
+    frame_id: "$(var robot_prefix)base_link"
 
 /**/mima_controller:
   ros__parameters:
-    use_sim_time: @use_sim_time@
+    use_sim_time: $(var use_sim_time)
     reference_timeout: 2.0
-    base_frame_id: "@robot_prefix@base_footprint_link"
-    odom_frame_id: "@robot_prefix@odom"
+    base_frame_id: "$(var robot_prefix)base_footprint_link"
+    odom_frame_id: "$(var robot_prefix)odom"
     enable_odom_tf: true
     front_steering: true
     use_stamped_vel: false
@@ -30,8 +30,8 @@
     reduce_wheel_speed_until_steering_reached: true
     velocity_rolling_window_size: 10
     position_feedback: false
-    rear_wheels_names: ["@robot_prefix@rear_right_wheel_rotation_joint", "@robot_prefix@rear_left_wheel_rotation_joint"]
-    front_wheels_names: ["@robot_prefix@front_right_wheel_steering_joint", "@robot_prefix@front_left_wheel_steering_joint"]
+    rear_wheels_names: ["$(var robot_prefix)rear_right_wheel_rotation_joint", "$(var robot_prefix)rear_left_wheel_rotation_joint"]
+    front_wheels_names: ["$(var robot_prefix)front_right_wheel_steering_joint", "$(var robot_prefix)front_left_wheel_steering_joint"]
     wheelbase: 1.7
     front_wheel_track: 0.78
     rear_wheel_track: 1.1
@@ -40,14 +40,14 @@
 
 /**/fork_trajectory_controller:
   ros__parameters:
-    use_sim_time: @use_sim_time@
+    use_sim_time: $(var use_sim_time)
     joints:
-      - "@robot_prefix@fork_mast_joint"
-      - "@robot_prefix@fork_holder_joint"
-      - "@robot_prefix@fork_board_joint"
+    - "$(var robot_prefix)fork_mast_joint"
+    - "$(var robot_prefix)fork_holder_joint"
+    - "$(var robot_prefix)fork_board_joint"
 
     command_interfaces:
-      - position
+    - position
 
     state_interfaces:
-      - position
+    - position

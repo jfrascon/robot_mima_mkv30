@@ -7,6 +7,7 @@ from launch.launch_context import LaunchContext
 from launch.substitutions import LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
 from launch_ros.actions import Node
+from launch_ros.descriptions import ParameterFile
 
 from launch import LaunchDescription, LaunchDescriptionEntity
 
@@ -115,7 +116,10 @@ def _launch_ros2_control(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
                 package='controller_manager',
                 executable='ros2_control_node',
                 namespace=LaunchConfiguration('robot_namespace'),
-                parameters=[controller_config_file, {'use_sim_time': use_sim_time_bool}],
+                parameters=[
+                    ParameterFile(controller_config_file, allow_substs=True),
+                    {'use_sim_time': use_sim_time_bool},
+                ],
                 output='screen',
             )
         )

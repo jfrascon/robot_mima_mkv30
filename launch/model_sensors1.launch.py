@@ -58,6 +58,8 @@ def generate_launch_description() -> LaunchDescription:
     # Declare the launch arguments for the xacro:args of the selected model
     # These launch arguments configure the robot model when building the robot description with
     # the xacro command.
+    # Please, be aware that 'sim_file' and 'controller_config_file' are declare via this function, because these files
+    # are used in the xacro model via xacro arguments.
     ldes.extend(model_utils.declare_launch_arguments(ROBOT_MODEL))
 
     ldes.extend(
@@ -111,7 +113,7 @@ def generate_launch_description() -> LaunchDescription:
                     'remappings for the matching controller.'
                 ),
             ),
-            # If controllers_config_file is a template, render it.
+            # Prepare controller_config_file for consumers that need a concrete YAML path.
             OpaqueFunction(function=model_utils.process_controller_config_file),
             _include_rsp(),
             _include_ros2_control(),

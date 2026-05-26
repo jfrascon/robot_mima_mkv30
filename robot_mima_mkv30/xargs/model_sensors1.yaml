@@ -6,8 +6,8 @@ sim_file:
   description: "Path to the simulation YAML. If empty, wheel Gazebo contact/friction blocks and sensor Gazebo plugins are not added."
 
 controller_config_file:
-  default_value: "package://robot_mima_mkv30/config/model_sensors1/example_controllers.yaml.in"
-  description: "Path to a controller YAML template. The launch file resolves @robot_prefix@ before passing it to xacro."
+  default_value: "package://robot_mima_mkv30/config/model_sensors1/example_controllers.yaml"
+  description: "Path to a controller YAML file. ROS launch substitutions in this file are expanded before the file is consumed."
 
 # Chassis.
 chassis_use_visual:

@@ -11,7 +11,6 @@ this concrete robot model are not xargs; they stay as Xacro properties inside
 the model includes.
 """
 
-import re
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -22,6 +21,7 @@ from launch.actions import DeclareLaunchArgument, SetLaunchConfiguration
 from launch.launch_context import LaunchContext
 from launch.substitutions import LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
+from launch_ros.descriptions import ParameterFile
 
 from launch import LaunchDescriptionEntity
 
@@ -119,12 +119,16 @@ def model_has_xargs(robot_model: str) -> bool:
 
 def process_controller_config_file(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
     """
-    Prepare the final controller YAML file for the current robot instance.
+    Prepare the controller YAML path for the current robot instance.
 
-    The input `controller_config_file` may be a plain YAML file or a template
-    that contains supported tokens such as `@robot_prefix@`. The output is
-    always written to `/tmp/<robot_namespace>_controllers.yaml`, and the launch
-    context key `controller_config_file` is updated to point to that final file.
+    Controller YAML files may contain ROS launch substitutions such as
+    `$(var robot_prefix)`. In real hardware mode, ros2_control_node receives the
+    original YAML through ParameterFile with substitution expansion enabled.
+
+    In simulation mode, Gazebo reads the controller YAML from the path stored in
+    the URDF <parameters> tag. That read does not go through ROS launch, so this
+    function expands the file through ParameterFile, copies the expanded result
+    to a stable path, and points `controller_config_file` at that stable file.
     """
     controller_config_file = LaunchConfiguration('controller_config_file').perform(ctx)
 
@@ -136,33 +140,43 @@ def process_controller_config_file(ctx: LaunchContext) -> List[LaunchDescription
     if not source_path.is_file():
         raise FileNotFoundError(f"Controller config file '{controller_config_file}' does not exist.")
 
-    robot_namespace = LaunchConfiguration('namespace').perform(ctx)
-    robot_prefix = LaunchConfiguration('robot_prefix').perform(ctx)
+    robot_namespace = LaunchConfiguration('robot_namespace').perform(ctx)
 
     if not robot_namespace:
-        raise RuntimeError("Launch context key 'namespace' must not be empty.")
-
-    if not robot_prefix:
-        raise RuntimeError("Launch context key 'robot_prefix' must not be empty.")
+        raise RuntimeError("Launch context key 'robot_namespace' must not be empty.")
 
     use_sim_time = perform_typed_substitution(
         ctx, normalize_typed_substitution(LaunchConfiguration('use_sim_time'), bool), bool
     )
-    use_sim_time_yaml = str(use_sim_time).lower()
 
-    rendered_text = source_path.read_text(encoding='utf-8')
-    rendered_text = rendered_text.replace('@robot_prefix@', robot_prefix)
-    rendered_text = rendered_text.replace('@robot_namespace@', robot_namespace)
-    rendered_text = rendered_text.replace('@use_sim_time@', use_sim_time_yaml)
-
-    unknown_tokens = sorted(set(re.findall(r'@[A-Za-z0-9_]+@', rendered_text)))
-
-    if unknown_tokens:
-        raise RuntimeError(f'Unknown controller config template tokens: {unknown_tokens}')
+    if not use_sim_time:
+        return [SetLaunchConfiguration('controller_config_file', str(source_path))]
 
     output_name = rlh.flatten_namespace(robot_namespace, '_') or 'robot'
     output_path = Path('/tmp') / f'{output_name}_controllers.yaml'
-    output_path.write_text(rendered_text, encoding='utf-8')
+    parameter_file = ParameterFile(source_path, allow_substs=True)
+
+    try:
+        # In simulation, Gazebo receives a controller YAML path through the URDF
+        # <parameters> tag. It reads that file directly, so the file must already
+        # contain the final values and must not contain unresolved launch variables.
+        #
+        # The controller YAML intentionally uses launch variables such as
+        # $(var robot_prefix), because launch_ros can expand them for YAML parameter
+        # files through ParameterFile. We use ParameterFile here for the same reason:
+        # it applies the standard launch_ros substitution engine instead of a custom
+        # string replacement step.
+        #
+        # With substitutions enabled, evaluate() writes the expanded YAML to a
+        # temporary file and returns that temporary path. That temporary file is owned
+        # by the ParameterFile object. When this function returns, that object can be
+        # destroyed, and its destructor calls cleanup(), which removes the temporary
+        # file. Copy the expanded YAML to our own stable path before cleanup() runs,
+        # so Gazebo never receives a path that can disappear.
+        evaluated_path = parameter_file.evaluate(ctx)
+        output_path.write_text(Path(evaluated_path).read_text(encoding='utf-8'), encoding='utf-8')
+    finally:
+        parameter_file.cleanup()
 
     return [SetLaunchConfiguration('controller_config_file', str(output_path))]
 
