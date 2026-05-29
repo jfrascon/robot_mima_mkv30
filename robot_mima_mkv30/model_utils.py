@@ -117,11 +117,11 @@ def model_has_xargs(robot_model: str) -> bool:
     return _xargs_file_exists(robot_model)
 
 
-def process_params_file(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
+def process_params_file(ctx: LaunchContext, params_file_key: str = 'params_file') -> List[LaunchDescriptionEntity]:
     """
     Prepare the robot parameter YAML path for child launch files and xacro.
 
-    `params_file` is the single robot configuration file used by
+    `params_file_key` identifies the single robot configuration file used by
     robot_state_publisher, the ROS-GZ bridge, ros2_control, and the
     gz_ros2_control plugin path written into the URDF. That file may contain
     ROS launch substitutions such as `$(var robot_prefix)`,
@@ -135,10 +135,10 @@ def process_params_file(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
     the same rendered path to Gazebo as `ros2_control_config_file`.
 
     When `params_file_allow_substs` is false, this function only resolves the
-    input path and stores that resolved path back in `params_file`. No YAML
+    input path and stores that resolved path back in `params_file_key`. No YAML
     rendering is done, so no extra launch context keys are required.
     """
-    params_file = rlh.resolve_file(LaunchConfiguration('params_file').perform(ctx))
+    params_file = rlh.resolve_file(LaunchConfiguration(params_file_key).perform(ctx))
 
     if not params_file:
         raise RuntimeError('params_file is required to prepare the robot parameters YAML file.')
@@ -151,18 +151,17 @@ def process_params_file(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
     )
 
     if not params_file_allow_substs:
-        return [SetLaunchConfiguration('params_file', params_file)]
+        # Even without rendering, replace the launch value with the resolved filesystem path.
+        # This keeps downstream launch actions from receiving package://, file://, or '~' paths
+        # after this wrapper tells them that substitutions are already disabled.
+        return [SetLaunchConfiguration(params_file_key, params_file)]
 
-    robot_namespace = LaunchConfiguration('robot_namespace').perform(ctx)
-    output_name = rlh.flatten_namespace(robot_namespace, '_') or 'robot'
-    output_path = Path(gettempdir()).joinpath(f'{output_name}_robot_params.yaml')
+    flattened_namespace = rlh.flatten_namespace(LaunchConfiguration('robot_namespace').perform(ctx), '_')
+    rendered_params_file = Path(gettempdir()).joinpath(f'{flattened_namespace}_robot_params.yaml')
 
-    return rlh.render_params_file(
-        ctx,
-        params_file_key='params_file',
-        rendered_params_file_key='params_file',
-        rendered_params_file_path=output_path,
-    )
+    rlh.render_params_file(params_file, rendered_params_file, ctx)
+
+    return [SetLaunchConfiguration(params_file_key, str(rendered_params_file))]
 
 
 def _check_xarg_fields(xarg_name: str, xarg_cfg: Dict[str, Any], xargs_file: Path) -> None:
