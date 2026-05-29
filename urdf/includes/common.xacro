@@ -133,8 +133,8 @@
 
   <!-- Fork launch-facing properties. -->
   <xacro:property name="fork_mast_color"        value="0.2 0.2 0.2 1"/>
-  <xacro:property name="fork_board_color"       value="0.4 0.4 0.4 1"/>
-  <xacro:property name="fork_tine_color"        value="0.6 0.6 0.6 1"/>
+  <xacro:property name="fork_board_color"       value="0.8 0.8 0.8 1"/>
+  <xacro:property name="fork_tine_color"        value="0.95 0.95 0.95 1"/>
   <xacro:property name="fork_use_visual"        value="$(arg fork_use_visual)"/>
   <xacro:property name="fork_use_inertial"      value="$(arg fork_use_inertial)"/>
   <xacro:property name="fork_mast_limits"       value="$(arg fork_mast_limits)"/>
@@ -292,7 +292,7 @@
     sim_slip1="${rear_left_wheel_sim_slip1}"
     sim_slip2="${rear_left_wheel_sim_slip2}"
     sim_fdir1="1 0 0"
-    sim_fdir1_frame="${robot_prefix}base_link"/>
+    sim_fdir1_frame="${robot_prefix}base_footprint_link"/>
 
   <xacro:property name="rear_right_wheel_sim_cfg"
                   value="${sim_cfg.get('rear_right_wheel', dict())}"/>
@@ -322,7 +322,7 @@
     sim_slip1="${rear_right_wheel_sim_slip1}"
     sim_slip2="${rear_right_wheel_sim_slip2}"
     sim_fdir1="1 0 0"
-    sim_fdir1_frame="${robot_prefix}base_link"/>
+    sim_fdir1_frame="${robot_prefix}base_footprint_link"/>
 
   <xacro:fork prefix="${robot_prefix}"
               name="fork"
