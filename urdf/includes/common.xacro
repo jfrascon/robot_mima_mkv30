@@ -5,11 +5,11 @@
   <xacro:include filename="$(find robotics_description)/urdf/gz_system_plugins/all_gz_system_plugins.xacro"/>
   <xacro:include filename="$(find robot_mima_mkv30)/urdf/includes/fork_macro.xacro"/>
 
-  <xacro:arg name="use_sim_mode" default="False"/>
-  <xacro:arg name="sim_file"     default=""/>
-  <xacro:arg name="namespace"    default=""/>
-  <xacro:arg name="robot_name"   default="mima_mkv30"/>
-  <xacro:arg name="controller_config_file" default=""/>
+  <xacro:arg name="use_sim_mode"           default="False"/>
+  <xacro:arg name="sim_file"               default=""/>
+  <xacro:arg name="namespace"              default=""/>
+  <xacro:arg name="robot_name"             default="mima_mkv30"/>
+  <xacro:arg name="ros2_control_config_file" default=""/>
 
   <!-- Chassis arguments. -->
   <xacro:arg name="chassis_use_visual"    default="True"/>
@@ -70,7 +70,7 @@
   <xacro:property name="rear_wheel_track"         value="1.1"/>
 
   <!-- Chassis fixed model properties. -->
-  <xacro:property name="chassis_color"           value="0 0 0.8 1.0"/>
+  <xacro:property name="chassis_color"           value="0.831372549 0 0 1"/>
   <xacro:property name="chassis_use_visual"      value="$(arg chassis_use_visual)"/>
   <xacro:property name="chassis_use_inertial"    value="$(arg chassis_use_inertial)"/>
   <xacro:property name="chassis_size_x"          value="${wheelbase}"/>
@@ -132,9 +132,9 @@
   <xacro:property name="wheel_mass"                      value="100.0"/>
 
   <!-- Fork launch-facing properties. -->
-  <xacro:property name="fork_mast_color"        value="1 0 0 1"/>
-  <xacro:property name="fork_board_color"       value="0 0 1 1"/>
-  <xacro:property name="fork_tine_color"        value="0 1 0 1"/>
+  <xacro:property name="fork_mast_color"        value="0.2 0.2 0.2 1"/>
+  <xacro:property name="fork_board_color"       value="0.4 0.4 0.4 1"/>
+  <xacro:property name="fork_tine_color"        value="0.6 0.6 0.6 1"/>
   <xacro:property name="fork_use_visual"        value="$(arg fork_use_visual)"/>
   <xacro:property name="fork_use_inertial"      value="$(arg fork_use_inertial)"/>
   <xacro:property name="fork_mast_limits"       value="$(arg fork_mast_limits)"/>

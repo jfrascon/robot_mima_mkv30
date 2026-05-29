@@ -1,5 +1,5 @@
 import json
-from typing import List
+from pathlib import Path
 
 import ros2_launch_helpers as rlh
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
@@ -14,44 +14,43 @@ from launch import LaunchDescription, LaunchDescriptionEntity
 
 def generate_launch_description() -> LaunchDescription:
     """
-    Prepare ros2_control from the selected time mode.
+    Build the internal ros2_control launch description for one robot instance.
 
-    The model wrapper prepares the final controller YAML file before including
-    this launch file. In simulation, the URDF contains the gz_ros2_control
-    plugin and that plugin receives the final YAML file path through the
-    <parameters> tag.
+    This launch file receives one ros2_control parameter file through
+    `params_file`. The file may already be rendered by a model launch file, or it
+    may be rendered here when `params_file_allow_substs` is true.
 
-    This launch file also starts the controller spawners required by this robot
-    model. The controller names are intentionally listed in this launch file.
+    `use_sim_time` is required because it selects the ros2_control runtime path
+    and because this launch file passes the same value to the ros2_control nodes
+    that it starts or asks the spawner to start.
 
-    In real hardware mode, this launch file launches controller_manager's
-    `ros2_control_node` before starting the controller spawners.
+    When `use_sim_time` is false, this launch file starts
+    controller_manager's `ros2_control_node`. When `use_sim_time` is true,
+    Gazebo starts the controller manager through gz_ros2_control and this launch
+    file only starts controller spawners.
 
-    `use_sim_time:=true` selects simulation mode. `use_sim_time:=false` selects
-    real-time mode.
+    The controller names are intentionally listed in this launch file.
     """
+    # Launch arguments with no default value must be provided by the caller.
     return LaunchDescription(
         [
-            DeclareLaunchArgument(
-                'use_sim_time',
-                default_value='False',
-                choices=['True', 'true', 'False', 'false'],
-                description='Use simulation time for ros2_control nodes launched by this file.',
-            ),
-            DeclareLaunchArgument(
-                'controller_config_file', default_value='', description='Path to the prepared controller YAML file.'
-            ),
             DeclareLaunchArgument('namespace', default_value='', description='Project namespace'),
+            DeclareLaunchArgument('robot_name', description='The unique name for the robot'),
+            DeclareLaunchArgument('params_file', description='Path to the ros2_control parameters file.'),
             DeclareLaunchArgument(
-                'robot_name', default_value='mima_mkv30', description='The unique name for the robot'
+                'params_file_allow_substs',
+                choices=['True', 'true', 'False', 'false'],
+                description='Allow ROS launch substitutions in params_file',
             ),
-            DeclareLaunchArgument('robot_model', default_value='base'),
             DeclareLaunchArgument(
-                'controller_remappings',
+                'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
+            ),
+            DeclareLaunchArgument(
+                'ros2_control_remappings',
                 default_value='{}',
                 description=(
-                    'JSON object indexed by controller name. Entries override the default '
-                    'remappings for the matching controller.'
+                    'JSON object indexed by known controller name. Entries override the '
+                    'default remappings for the matching controller.'
                 ),
             ),
             OpaqueFunction(
@@ -62,69 +61,66 @@ def generate_launch_description() -> LaunchDescription:
                     'robot_namespace_key': 'robot_namespace',
                 },
             ),
-            OpaqueFunction(
-                function=rlh.set_robot_prefix,
-                kwargs={'robot_name_key': 'robot_name', 'robot_prefix_key': 'robot_prefix'},
-            ),
             OpaqueFunction(function=_launch_ros2_control),
         ]
     )
 
 
-def _launch_ros2_control(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
+def _launch_ros2_control(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     """
-    Launch ros2_control actions for the selected time mode.
+    Launch ros2_control_node when needed and start the controller spawners.
 
     If `use_sim_time` is true, Gazebo creates the controller manager through the
     `gz_ros2_control` plugin declared in the URDF. In that case this function
     does not launch `ros2_control_node`; it only launches the controller spawner
     processes against Gazebo's controller manager in the robot namespace.
 
-    If `use_sim_time` is false, this function launches the real
-    `controller_manager` node with the prepared controller YAML file. It then
-    launches the same controller spawner processes against the controller
+    If `use_sim_time` is false, this function launches
+    `controller_manager` with the parameter YAML file. It then launches the
+    same controller spawner processes against the controller
     manager node created in the robot namespace.
 
     The controller receives fully expanded frame and joint names. Source code in
     the controller should not add robot-specific prefixes to those names.
     """
 
-    controller_config_file = LaunchConfiguration('controller_config_file').perform(ctx)
+    params_file = rlh.resolve_file(LaunchConfiguration('params_file').perform(ctx))
+    params_file_allow_substs = perform_typed_substitution(
+        ctx, normalize_typed_substitution(LaunchConfiguration('params_file_allow_substs'), bool), bool
+    )
 
-    if not controller_config_file:
-        raise RuntimeError('controller_config_file must point to the prepared controller YAML file.')
+    if not params_file:
+        raise RuntimeError('params_file must point to the ros2_control parameters YAML file.')
+
+    if not Path(params_file).is_file():
+        raise FileNotFoundError(f"Params file '{params_file}' does not exist.")
 
     use_sim_time_lc = LaunchConfiguration('use_sim_time')
     use_sim_time_bool = perform_typed_substitution(ctx, normalize_typed_substitution(use_sim_time_lc, bool), bool)
-    robot_namespace = LaunchConfiguration('robot_namespace').perform(ctx).strip('/')
+    robot_namespace = LaunchConfiguration('robot_namespace').perform(ctx)
 
-    if not robot_namespace:
-        raise RuntimeError('robot_namespace cannot be empty')
+    controller_manager = rlh.resolve_name(robot_namespace, 'controller_manager')
 
-    # The spawner accepts a controller manager node name. Use an absolute ROS name here so the
-    # target controller manager is explicit and independent of the namespace in which the spawner
-    # might be launched (there is no real need to launch the spawner in a specific namespace since
-    # its lifetime is very short and it only serves to launch the controllers in the target
-    # controller manager).
-    controller_manager = rlh.resolve_name('/', rlh.resolve_name(robot_namespace, 'controller_manager'))
+    ldes: list[LaunchDescriptionEntity] = []
 
-    ldes: List[LaunchDescriptionEntity] = []
-
+    # When Gazebo is not running the ros2_control plugin, this launch file starts
+    # controller_manager directly. The launch argument use_sim_time is passed as
+    # a node parameter because use_sim_time is not configured in the YAML file.
     if not use_sim_time_bool:
         ldes.append(
             Node(
                 package='controller_manager',
                 executable='ros2_control_node',
-                namespace=LaunchConfiguration('robot_namespace'),
+                namespace=robot_namespace,
                 parameters=[
-                    ParameterFile(controller_config_file, allow_substs=True),
+                    ParameterFile(params_file, allow_substs=params_file_allow_substs),
                     {'use_sim_time': use_sim_time_bool},
                 ],
                 output='screen',
             )
         )
 
-    default_controller_remappings = {
+    default_ros2_control_remappings = {
         'joint_state_broadcaster': ['joint_states:=joint_states'],
         'mima_controller': [
             '~/reference:=cmd_vel',
@@ -139,54 +135,47 @@ def _launch_ros2_control(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
         ],
     }
 
-    controller_remappings = _merge_controller_remappings(
-        default_controller_remappings,
-        _parse_controller_remappings(LaunchConfiguration('controller_remappings').perform(ctx)),
+    remappings = _merge_remappings(
+        default_ros2_control_remappings, _parse_remappings(LaunchConfiguration('ros2_control_remappings').perform(ctx))
     )
 
     use_sim_time_arg = f'use_sim_time:={str(use_sim_time_bool).lower()}'
 
+    common_spawner_arguments = ['--controller-manager', controller_manager, '--switch-timeout', '30.0']
+    common_controller_ros_args = ['--ros-args', '--param', use_sim_time_arg]
+
+    joint_state_broadcaster_ros_args = common_controller_ros_args + _get_remappings_ros_args(
+        remappings.get('joint_state_broadcaster', [])
+    )
+
     joint_state_broadcaster_controller_arguments = [
         'joint_state_broadcaster',
-        '--controller-manager',
-        controller_manager,
+        *common_spawner_arguments,
+        '--controller-ros-args',
+        ' '.join(joint_state_broadcaster_ros_args),
     ]
 
-    joint_state_broadcaster_ros_args = ['--ros-args', '--param', use_sim_time_arg]
-
-    # Extend the controller ROS arguments with remappings provided for this controller.
-    joint_state_broadcaster_ros_args.extend(
-        _controller_remap_arguments(controller_remappings, 'joint_state_broadcaster')
+    mima_controller_ros_args = common_controller_ros_args + _get_remappings_ros_args(
+        remappings.get('mima_controller', [])
     )
 
-    # The spawner argparse definition expects one value after `--controller-ros-args`.
-    # Keep the full ROS argument list as one string so argparse does not treat the first
-    # `--ros-args` token as a new spawner option.
-    joint_state_broadcaster_controller_arguments.extend(
-        ['--controller-ros-args', ' '.join(joint_state_broadcaster_ros_args)]
+    mima_controller_arguments = [
+        'mima_controller',
+        *common_spawner_arguments,
+        '--controller-ros-args',
+        ' '.join(mima_controller_ros_args),
+    ]
+
+    fork_trajectory_controller_ros_args = common_controller_ros_args + _get_remappings_ros_args(
+        remappings.get('fork_trajectory_controller', [])
     )
 
-    mima_controller_arguments = ['mima_controller', '--controller-manager', controller_manager]
-
-    mima_controller_ros_args = ['--ros-args', '--param', use_sim_time_arg]
-
-    # Extend the controller ROS arguments with remappings provided for this controller.
-    mima_controller_ros_args.extend(_controller_remap_arguments(controller_remappings, 'mima_controller'))
-
-    mima_controller_arguments.extend(['--controller-ros-args', ' '.join(mima_controller_ros_args)])
-
-    fork_trajectory_controller_arguments = ['fork_trajectory_controller', '--controller-manager', controller_manager]
-
-    fork_trajectory_controller_ros_args = ['--ros-args', '--param', use_sim_time_arg]
-
-    # Extend the controller ROS arguments with remappings provided for this controller.
-    fork_trajectory_controller_ros_args.extend(
-        _controller_remap_arguments(controller_remappings, 'fork_trajectory_controller')
-    )
-
-    fork_trajectory_controller_arguments.extend(
-        ['--controller-ros-args', ' '.join(fork_trajectory_controller_ros_args)]
-    )
+    fork_trajectory_controller_arguments = [
+        'fork_trajectory_controller',
+        *common_spawner_arguments,
+        '--controller-ros-args',
+        ' '.join(fork_trajectory_controller_ros_args),
+    ]
 
     ldes.extend(
         [
@@ -211,41 +200,47 @@ def _launch_ros2_control(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
     return ldes
 
 
-# Helper functions
-
-
-def _controller_remap_arguments(controller_remappings: dict[str, list[str]], controller_name: str) -> list[str]:
+def _get_remappings_ros_args(remappings: list[str]) -> list[str]:
     """
     Convert one controller remapping list to ROS remap argument fragments.
     """
     remap_arguments: list[str] = []
 
-    for remapping in controller_remappings.get(controller_name, []):
+    for remapping in remappings:
         remap_arguments.extend(['--remap', remapping])
 
     return remap_arguments
 
 
-def _merge_controller_remappings(
-    default_controller_remappings: dict[str, list[str]], controller_remapping_overrides: dict[str, list[str]]
+def _merge_remappings(
+    default_ros2_control_remappings: dict[str, list[str]], controller_remapping_overrides: dict[str, list[str]]
 ) -> dict[str, list[str]]:
     """
-    Apply user-provided remapping lists as per-controller replacements.
+    Apply user-provided remapping overrides to the default ros2_control remappings.
 
-    The model launch files pass `{}` by default, so this function keeps all
-    default remappings unless the user provides an entry for a controller. When
-    the user provides an entry, that controller list replaces the default list.
+    The model launch files pass `{}` by default, so all default remappings are
+    kept unless the user provides an entry for a controller. A user-provided
+    entry replaces the complete list for that controller; it is not appended to
+    the default list. Unknown controller names raise an error instead of being
+    ignored.
     """
-    controller_remappings = {name: list(remappings) for name, remappings in default_controller_remappings.items()}
+    ros2_control_remappings = {name: list(remappings) for name, remappings in default_ros2_control_remappings.items()}
+
     for controller_name, remappings in controller_remapping_overrides.items():
-        controller_remappings[controller_name] = list(remappings)
+        if controller_name not in ros2_control_remappings:
+            raise RuntimeError(
+                f"ros2_control_remappings has an unknown controller '{controller_name}'. "
+                f'Known controllers: {sorted(ros2_control_remappings.keys())}.'
+            )
 
-    return controller_remappings
+        ros2_control_remappings[controller_name] = list(remappings)
+
+    return ros2_control_remappings
 
 
-def _parse_controller_remappings(raw_value: str) -> dict[str, list[str]]:
+def _parse_remappings(raw_value: str) -> dict[str, list[str]]:
     """
-    Parse and validate the JSON string used by `controller_remappings`.
+    Parse and validate the JSON string used by `ros2_control_remappings`.
 
     The expected value is a JSON object indexed by controller name. Each value
     is a list of ROS remapping strings written as `from:=to`.
@@ -253,45 +248,48 @@ def _parse_controller_remappings(raw_value: str) -> dict[str, list[str]]:
     try:
         config = json.loads(raw_value)
     except json.JSONDecodeError as error:
-        raise RuntimeError('controller_remappings must be a valid JSON object.') from error
+        raise RuntimeError('ros2_control_remappings must be a valid JSON object.') from error
 
     if not isinstance(config, dict):
-        raise RuntimeError('controller_remappings must be a JSON object indexed by controller name.')
+        raise RuntimeError('ros2_control_remappings must be a JSON object indexed by controller name.')
 
-    controller_remappings: dict[str, list[str]] = {}
+    ros2_control_remappings: dict[str, list[str]] = {}
+
     for controller_name, remappings in config.items():
         if not isinstance(controller_name, str) or not controller_name:
-            raise RuntimeError('controller_remappings keys must be non-empty controller names.')
+            raise RuntimeError('ros2_control_remappings keys must be non-empty controller names.')
 
         if not isinstance(remappings, list):
-            raise RuntimeError(f"controller_remappings entry for controller '{controller_name}' must be a JSON list.")
+            raise RuntimeError(f"ros2_control_remappings entry for controller '{controller_name}' must be a JSON list.")
 
-        controller_remappings[controller_name] = []
+        ros2_control_remappings[controller_name] = []
 
         for index, remapping in enumerate(remappings):
             if not isinstance(remapping, str):
                 raise RuntimeError(
-                    f"controller_remappings item {index} for controller '{controller_name}' must be a string."
+                    f"ros2_control_remappings item {index} for controller '{controller_name}' must be a string."
                 )
 
             try:
                 original_topic, new_topic = remapping.split(':=', maxsplit=1)
             except ValueError as error:
                 raise RuntimeError(
-                    f"controller_remappings item {index} for controller '{controller_name}' must use 'from:=to' syntax."
+                    f"ros2_control_remappings item {index} for controller '{controller_name}' must use "
+                    "'from:=to' syntax."
                 ) from error
 
             if not original_topic:
                 raise RuntimeError(
-                    f"controller_remappings item {index} for controller '{controller_name}' must have "
+                    f"ros2_control_remappings item {index} for controller '{controller_name}' must have "
                     "a non-empty 'from'."
                 )
 
             if not new_topic:
                 raise RuntimeError(
-                    f"controller_remappings item {index} for controller '{controller_name}' must have a non-empty 'to'."
+                    f"ros2_control_remappings item {index} for controller '{controller_name}' must have "
+                    "a non-empty 'to'."
                 )
 
-            controller_remappings[controller_name].append(remapping)
+            ros2_control_remappings[controller_name].append(remapping)
 
-    return controller_remappings
+    return ros2_control_remappings

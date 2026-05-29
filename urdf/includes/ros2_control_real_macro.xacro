@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot name="mima_mkv30_ros2_control_real_macro" xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="mima_mkv30_ros2_control_real" params="controller_config_file">
+  <xacro:macro name="mima_mkv30_ros2_control_real" params="ros2_control_config_file">
     <!--
     Placeholder for real ros2_control integration.
 

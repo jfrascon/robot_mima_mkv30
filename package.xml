@@ -4,8 +4,8 @@
   <name>robot_mima_mkv30</name>
   <version>0.1.0</version>
   <description>URDF description for the MiMA MKV30 base model</description>
-  <maintainer email="todo@example.com">TODO</maintainer>
-  <license>TODO</license>
+  <maintainer email="jfrascon@me.com">Juan Francisco Rascon Crespo</maintainer>
+  <license>Apache-2.0</license>
 
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>controller_manager</exec_depend>

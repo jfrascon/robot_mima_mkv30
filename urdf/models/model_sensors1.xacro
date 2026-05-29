@@ -527,7 +527,7 @@
   -->
   <xacro:if value="${use_sim_mode}">
     <xacro:ros2_control_sim
-      controller_config_file="$(arg controller_config_file)"
+      ros2_control_config_file="$(arg ros2_control_config_file)"
       robot_namespace="${robot_namespace}"/>
   </xacro:if>
 </robot>

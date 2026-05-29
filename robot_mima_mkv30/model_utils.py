@@ -12,6 +12,7 @@ the model includes.
 """
 
 from pathlib import Path
+from tempfile import gettempdir
 from typing import Any, Dict, List
 
 import ros2_launch_helpers as rlh
@@ -21,7 +22,6 @@ from launch.actions import DeclareLaunchArgument, SetLaunchConfiguration
 from launch.launch_context import LaunchContext
 from launch.substitutions import LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
-from launch_ros.descriptions import ParameterFile
 
 from launch import LaunchDescriptionEntity
 
@@ -117,68 +117,52 @@ def model_has_xargs(robot_model: str) -> bool:
     return _xargs_file_exists(robot_model)
 
 
-def process_controller_config_file(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
+def process_params_file(ctx: LaunchContext) -> List[LaunchDescriptionEntity]:
     """
-    Prepare the controller YAML path for the current robot instance.
+    Prepare the robot parameter YAML path for child launch files and xacro.
 
-    Controller YAML files may contain ROS launch substitutions such as
-    `$(var robot_prefix)`. In real hardware mode, ros2_control_node receives the
-    original YAML through ParameterFile with substitution expansion enabled.
+    `params_file` is the single robot configuration file used by
+    robot_state_publisher, the ROS-GZ bridge, ros2_control, and the
+    gz_ros2_control plugin path written into the URDF. That file may contain
+    ROS launch substitutions such as `$(var robot_prefix)`,
+    `$(var robot_odometry_frame)`, `$(var robot_base_frame)`, or fixed robot
+    model values like `$(var robot_wheelbase)`.
 
-    In simulation mode, Gazebo reads the controller YAML from the path stored in
-    the URDF <parameters> tag. That read does not go through ROS launch, so this
-    function expands the file through ParameterFile, copies the expanded result
-    to a stable path, and points `controller_config_file` at that stable file.
+    When `params_file_allow_substs` is true, this function renders the file once
+    with the standard launch_ros parameter-file substitution engine and stores a
+    stable rendered copy in `/tmp`. The child launch files then receive that
+    rendered path with `params_file_allow_substs` set to false, and xacro passes
+    the same rendered path to Gazebo as `ros2_control_config_file`.
+
+    When `params_file_allow_substs` is false, this function only resolves the
+    input path and stores that resolved path back in `params_file`. No YAML
+    rendering is done, so no extra launch context keys are required.
     """
-    controller_config_file = LaunchConfiguration('controller_config_file').perform(ctx)
+    params_file = rlh.resolve_file(LaunchConfiguration('params_file').perform(ctx))
 
-    if not controller_config_file:
-        raise RuntimeError('controller_config_file is required to prepare the controller YAML file.')
+    if not params_file:
+        raise RuntimeError('params_file is required to prepare the robot parameters YAML file.')
 
-    source_path = Path(rlh.resolve_file(controller_config_file))
+    if not Path(params_file).is_file():
+        raise FileNotFoundError(f"Params file '{params_file}' does not exist.")
 
-    if not source_path.is_file():
-        raise FileNotFoundError(f"Controller config file '{controller_config_file}' does not exist.")
-
-    robot_namespace = LaunchConfiguration('robot_namespace').perform(ctx)
-
-    if not robot_namespace:
-        raise RuntimeError("Launch context key 'robot_namespace' must not be empty.")
-
-    use_sim_time = perform_typed_substitution(
-        ctx, normalize_typed_substitution(LaunchConfiguration('use_sim_time'), bool), bool
+    params_file_allow_substs = perform_typed_substitution(
+        ctx, normalize_typed_substitution(LaunchConfiguration('params_file_allow_substs'), bool), bool
     )
 
-    if not use_sim_time:
-        return [SetLaunchConfiguration('controller_config_file', str(source_path))]
+    if not params_file_allow_substs:
+        return [SetLaunchConfiguration('params_file', params_file)]
 
+    robot_namespace = LaunchConfiguration('robot_namespace').perform(ctx)
     output_name = rlh.flatten_namespace(robot_namespace, '_') or 'robot'
-    output_path = Path('/tmp') / f'{output_name}_controllers.yaml'
-    parameter_file = ParameterFile(source_path, allow_substs=True)
+    output_path = Path(gettempdir()).joinpath(f'{output_name}_robot_params.yaml')
 
-    try:
-        # In simulation, Gazebo receives a controller YAML path through the URDF
-        # <parameters> tag. It reads that file directly, so the file must already
-        # contain the final values and must not contain unresolved launch variables.
-        #
-        # The controller YAML intentionally uses launch variables such as
-        # $(var robot_prefix), because launch_ros can expand them for YAML parameter
-        # files through ParameterFile. We use ParameterFile here for the same reason:
-        # it applies the standard launch_ros substitution engine instead of a custom
-        # string replacement step.
-        #
-        # With substitutions enabled, evaluate() writes the expanded YAML to a
-        # temporary file and returns that temporary path. That temporary file is owned
-        # by the ParameterFile object. When this function returns, that object can be
-        # destroyed, and its destructor calls cleanup(), which removes the temporary
-        # file. Copy the expanded YAML to our own stable path before cleanup() runs,
-        # so Gazebo never receives a path that can disappear.
-        evaluated_path = parameter_file.evaluate(ctx)
-        output_path.write_text(Path(evaluated_path).read_text(encoding='utf-8'), encoding='utf-8')
-    finally:
-        parameter_file.cleanup()
-
-    return [SetLaunchConfiguration('controller_config_file', str(output_path))]
+    return rlh.render_params_file(
+        ctx,
+        params_file_key='params_file',
+        rendered_params_file_key='params_file',
+        rendered_params_file_path=output_path,
+    )
 
 
 def _check_xarg_fields(xarg_name: str, xarg_cfg: Dict[str, Any], xargs_file: Path) -> None:

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot name="ros2_control_sim_macro" xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="ros2_control_sim" params="controller_config_file robot_namespace">
+  <xacro:macro name="ros2_control_sim" params="ros2_control_config_file robot_namespace">
     <ros2_control name="GazeboSimSystem" type="system">
       <hardware>
         <plugin>gz_ros2_control/GazeboSimSystem</plugin>
@@ -97,7 +97,7 @@
         <ros>
           <namespace>${robot_namespace}</namespace>
         </ros>
-        <parameters>${controller_config_file}</parameters>
+        <parameters>${ros2_control_config_file}</parameters>
       </plugin>
     </gazebo>
   </xacro:macro>

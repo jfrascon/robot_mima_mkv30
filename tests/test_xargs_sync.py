@@ -5,8 +5,8 @@ from conftest import PACKAGE_DIR
 
 from robot_mima_mkv30 import model_utils
 
-RESERVED_LAUNCH_ARGS = {'use_sim_mode', 'namespace', 'robot_name'}
-MODEL_SPECIFIC_DEFAULT_ARGS = {'sim_file', 'controller_config_file'}
+RESERVED_LAUNCH_ARGS = {'use_sim_mode', 'namespace', 'robot_name', 'ros2_control_config_file'}
+MODEL_SPECIFIC_DEFAULT_ARGS = {'sim_file'}
 
 
 def _normalize_package_reference(value: str) -> str:

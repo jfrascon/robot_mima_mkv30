@@ -5,10 +5,6 @@ sim_file:
   default_value: "package://robot_mima_mkv30/config/model_base/example_simulation.yaml"
   description: "Path to the simulation YAML. If empty, wheel Gazebo contact/friction blocks are not added."
 
-controller_config_file:
-  default_value: "package://robot_mima_mkv30/config/model_base/example_controllers.yaml"
-  description: "Path to a controller YAML file. ROS launch substitutions in this file are expanded before the file is consumed."
-
 # Chassis.
 chassis_use_visual:
   default_value: "True"

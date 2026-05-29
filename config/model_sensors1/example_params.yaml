@@ -1,21 +1,95 @@
+# Keys used by launch substitution expressions must exist in the launch context.
+# Do not configure `use_sim_time` in this file, launch files handle that argument.
+# model_sensors1.launch.py provides these next context keys for robot parameter substitutions:
+# - robot_namespace
+# - robot_prefix
+# - robot_odometry_frame
+# - robot_base_frame
+# - robot_rear_left_wheel_rotation_joint
+# - robot_rear_right_wheel_rotation_joint
+# - robot_front_left_wheel_steering_joint
+# - robot_front_right_wheel_steering_joint
+# - robot_fork_mast_joint
+# - robot_fork_holder_joint
+# - robot_fork_board_joint
+# - robot_wheelbase
+# - robot_front_wheel_track
+# - robot_rear_wheel_track
+# - robot_front_wheels_radius
+# - robot_rear_wheels_radius
+
 /**/robot_state_publisher:
   ros__parameters:
-    use_sim_time: $(var use_sim_time)
+    # _rsp.launch.py renders `robot_description`.
+    # _rsp.launch.py sets use_robot_description_topic to true, because robot_description is
+    # published as a topic always.
+    # _rsp.launch.py sets frame_prefix to "", because frame prefixes are already inserted into the
+    # xacro model names.
     publish_frequency: 20.0
-    ignore_timestamp: false # If True joint_state messages are accepted, no matter their timestamp
-    # PARAMETER `ROBOT_DESCRIPTION` IS MANAGED IN THE LAUNCH FILE, NOT HERE.
-    use_robot_description_topic: true
-    # PARAMETER `FRAME_PREFIX` IS ALWAYS USED AS AN EMPTY STRING IN THE LAUNCH FILE; ROBOT_PREFIX
-    #    IS MANAGED IN THE LAUNCH FILE.
+    ignore_timestamp: false # If true, joint_state messages are accepted regardless of timestamp.
 
 /**/bridge:
   ros__parameters:
-    use_sim_time: $(var use_sim_time)
+    # _bridge.launch.py sets expand_gz_topic_names to true, because Gazebo topics always use
+    # the robot namespace to allow multiple robots in the same simulation.
+    # _bridge.launch.py sets override_frame_id to "", because sensor plugins publish the
+    # required frame_id.
+    config_file: $(var bridge_file)
     subscription_heartbeat: 1000
-    # PARAMETER `CONFIG_FILE` IS MANAGED IN THE LAUNCH FILE; NOT HERE.
-    expand_gz_topic_names: true
     override_timestamps_with_wall_time: false
-    override_frame_id: ""
 
-# Controllers have their own configuration file, that is passed as a launch argument to the
-# ros2_control_node when the robot is launched in real time or in simulation time.
+# Controller parameters are part of this robot parameters file. The model launch
+# renders this file before passing it to ros2_control and Gazebo.
+/**/controller_manager:
+  ros__parameters:
+    update_rate: 50
+
+    joint_state_broadcaster:
+      type: "joint_state_broadcaster/JointStateBroadcaster"
+
+    mima_controller:
+      type: "mima_controller/MimaController"
+
+    fork_trajectory_controller:
+      type: "joint_trajectory_controller/JointTrajectoryController"
+
+/**/joint_state_broadcaster:
+  ros__parameters:
+    frame_id: $(var robot_base_frame)
+
+/**/mima_controller:
+  ros__parameters:
+    reference_timeout: 2.0
+    base_frame_id: $(var robot_base_frame)
+    odom_frame_id: $(var robot_odometry_frame)
+    enable_odom_tf: true
+    front_steering: true
+    use_stamped_vel: true
+    open_loop: false
+    reduce_wheel_speed_until_steering_reached: true
+    velocity_rolling_window_size: 10
+    position_feedback: false
+    rear_wheels_names:
+    - $(var robot_rear_right_wheel_rotation_joint)
+    - $(var robot_rear_left_wheel_rotation_joint)
+    front_wheels_names:
+    - $(var robot_front_right_wheel_steering_joint)
+    - $(var robot_front_left_wheel_steering_joint)
+    wheelbase: $(var robot_wheelbase)
+    front_wheel_track: $(var robot_front_wheel_track)
+    rear_wheel_track: $(var robot_rear_wheel_track)
+    front_wheels_radius: $(var robot_front_wheels_radius)
+    rear_wheels_radius: $(var robot_rear_wheels_radius)
+
+/**/fork_trajectory_controller:
+  ros__parameters:
+    joints:
+    - $(var robot_fork_mast_joint)
+    - $(var robot_fork_holder_joint)
+    - $(var robot_fork_board_joint)
+
+    command_interfaces:
+    - position
+
+    state_interfaces:
+    - position

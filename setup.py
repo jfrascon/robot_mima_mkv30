@@ -43,10 +43,10 @@ setup(
     ],
     install_requires=['setuptools', 'PyYAML'],
     zip_safe=True,
-    maintainer='TODO',
-    maintainer_email='todo@example.com',
+    maintainer='Juan Francisco Rascon Crespo',
+    maintainer_email='jfrascon@me.com',
     description='URDF description for the MiMA MKV30 base model',
-    license='TODO',
+    license='Apache-2.0',
     extras_require={'test': ['pytest']},
     python_requires='>=3.8',
 )
