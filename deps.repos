@@ -17,7 +17,7 @@ repositories:
     ros2_launch_helpers:
         type: git
         url: git@gitlab.local.eurecat.org:robotics-automation/eut_ros2_launch_helpers.git
-        version: ros2
+        version: 185df945bf2d91b192cef8fe97eddab7a8aabbf9
         #exclude: [] # list of repos files inside repository_path to exclude (optional)
 
 # The package `perte_controller_mima` is declared as a runtime dependency in
