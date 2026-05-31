@@ -141,7 +141,14 @@ def _launch_ros2_control(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
 
     use_sim_time_arg = f'use_sim_time:={str(use_sim_time_bool).lower()}'
 
-    common_spawner_arguments = ['--controller-manager', controller_manager, '--switch-timeout', '30.0']
+    common_spawner_arguments = [
+        '--controller-manager',
+        controller_manager,
+        '--switch-timeout',
+        '30.0',
+        '--service-call-timeout',
+        '30.0',
+    ]
     common_controller_ros_args = ['--ros-args', '--param', use_sim_time_arg]
 
     joint_state_broadcaster_ros_args = common_controller_ros_args + _get_remappings_ros_args(
