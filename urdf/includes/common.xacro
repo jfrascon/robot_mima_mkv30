@@ -347,6 +347,82 @@
   <xacro:if value="${use_sim_mode}">
     <gazebo>
       <!--
+      Insert the `LinearBatteryPlugin` Gazebo plugin to publish the model battery state and optionally drain the battery.
+      More details about this plugin in
+      package://robotics_description/urdf/gz_system_plugins/plugin_linear_battery_macro.xacro
+      -->
+      <xacro:property name="battery_sim_cfg"
+                      value="${sim_cfg.get('battery', dict())}"/>
+
+      <xacro:if value="${battery_sim_cfg.get('enabled', False)}">
+        <xacro:property name="battery_name" value="${battery_sim_cfg.get('name', '')}"/>
+
+        <!--
+        Parameters 'name', 'voltage', 'capacity' and 'power_load' are required in the `battery` simulation
+        configuration.
+        -->
+
+        <xacro:if value="${battery_name == ''}">
+          ${xacro.fatal("battery: name is required when battery.enabled is true")}
+        </xacro:if>
+
+        <xacro:property name="battery_voltage" value="${battery_sim_cfg.get('voltage', '')}"/>
+
+        <xacro:if value="${battery_voltage == ''}">
+          ${xacro.fatal("battery: voltage is required when battery.enabled is true")}
+        </xacro:if>
+
+        <xacro:property name="battery_capacity" value="${battery_sim_cfg.get('capacity', '')}"/>
+
+        <xacro:if value="${battery_capacity == ''}">
+          ${xacro.fatal("battery: capacity is required when battery.enabled is true")}
+        </xacro:if>
+
+        <xacro:property name="battery_power_load" value="${battery_sim_cfg.get('power_load', '')}"/>
+
+        <xacro:if value="${battery_power_load == ''}">
+          ${xacro.fatal("battery: power_load is required when battery.enabled is true")}
+        </xacro:if>
+
+        <xacro:property name="battery_power_draining_topic"
+                        value="${battery_sim_cfg.get('power_draining_topic', '')}"/>
+
+        <xacro:if value="${battery_power_draining_topic != ''}">
+          <xacro:resolve_topic prop_id="battery_power_draining_topic"
+                               topic="${battery_power_draining_topic}"
+                               namespace="${robot_namespace}"/>
+        </xacro:if>
+
+        <xacro:property name="battery_stop_power_draining_topic"
+                        value="${battery_sim_cfg.get('stop_power_draining_topic', '')}"/>
+
+        <xacro:if value="${battery_stop_power_draining_topic != ''}">
+          <xacro:resolve_topic prop_id="battery_stop_power_draining_topic"
+                               topic="${battery_stop_power_draining_topic}"
+                               namespace="${robot_namespace}"/>
+        </xacro:if>
+
+        <xacro:plugin_linear_battery
+          name="${battery_name}"
+          voltage="${battery_voltage}"
+          capacity="${battery_capacity}"
+          power_load="${battery_power_load}"
+          fix_issue_225="${battery_sim_cfg.get('fix_issue_225', True)}"
+          open_circuit_voltage_constant_coef="${battery_sim_cfg.get('open_circuit_voltage_constant_coef', '')}"
+          open_circuit_voltage_linear_coef="${battery_sim_cfg.get('open_circuit_voltage_linear_coef', '')}"
+          initial_charge="${battery_sim_cfg.get('initial_charge', '')}"
+          resistance="${battery_sim_cfg.get('resistance', '')}"
+          smooth_current_tau="${battery_sim_cfg.get('smooth_current_tau', '')}"
+          invert_current_sign="${battery_sim_cfg.get('invert_current_sign', '')}"
+          start_draining="${battery_sim_cfg.get('start_draining', '')}"
+          power_draining_topic="${battery_power_draining_topic}"
+          stop_power_draining_topic="${battery_stop_power_draining_topic}"
+          enable_recharge="${battery_sim_cfg.get('enable_recharge', '')}"
+          charging_time="${battery_sim_cfg.get('charging_time', '')}"
+          recharge_by_topic="${battery_sim_cfg.get('recharge_by_topic', '')}"/>
+      </xacro:if>
+
+      <!--
       Insert the `OdometryPublisher` Gazebo plugin to publish the true pose of
       the robot with respect to a selected fixed frame in Gazebo.
       More details about this plugin in

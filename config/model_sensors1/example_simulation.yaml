@@ -1,6 +1,78 @@
-################################################################################
+# Parameters for a basic functional battery:
+# - `name`: The name of the battery.
+# - `voltage`: Initial voltage of the battery in volts.
+# - `capacity`: Total charge that the battery can hold in ampere-hours.
+# - `power_load`: Power load on the battery in watts.
+# - `fix_issue_225`: Enables Gazebo's corrected battery state-of-charge behavior.
+#   With this flag set:
+#     battery_runtime_hours = capacity_Ah * voltage_V / power_load_W
+#   With this flag unset:
+#     battery_runtime_hours = capacity_Ah * voltage_V / (power_load_W * 100)
+#
+# Ideal battery with no discharge:
+# - If a robot needs a battery state topic but the battery should behave like an ideal infinite battery, use the same
+#   basic battery parameters and set `power_load` to 0.
+# - The important field is `power_load: 0.0`. With zero power load, the plugin can publish battery state while the
+#   stored charge remains constant.
+# - Keep `voltage` positive. Do not use `voltage: 0.0`, because the plugin computes current from power / voltage.
+#
+# Parameters for a more realistic battery:
+# If you need to model a more realistic battery, use the basic battery parameters above and add any of the following
+# fields:
+# - `open_circuit_voltage_constant_coef`: Voltage at full charge in volts.
+#   If omitted, the macro uses the same value as `voltage`.
+# - `open_circuit_voltage_linear_coef`: Voltage decrease when the battery has  no charge.
+# - `initial_charge`: Initial charge of the battery in ampere-hours.
+# - `resistance`: Internal resistance in ohms.
+# - `smooth_current_tau`: Coefficient for smoothing current.
+# - `invert_current_sign`: Flips the sign of the current reported in the battery state message.
+# - `start_draining`: Starts draining the battery at the beginning of the simulation.
+# - `power_draining_topic`: Topic that starts power draining when a message is received.
+# - `stop_power_draining_topic`: Topic that stops power draining when a message is received.
+#
+# Charging:
+# - Whether the battery is modeled with only the basic parameters or with the more realistic parameters above, the
+#   following fields enable recharge behavior.
+# - `enable_recharge`: Enables battery recharging.
+# - `charging_time`: Hours needed to fully charge the battery with no load.
+# - `recharge_by_topic`: If true, the plugin also subscribes to Gazebo Transport message topics for starting and
+#   stopping recharge.
+# - When recharge is enabled, Gazebo always exposes these Gazebo Transportservices.
+#   Both services use `gz::msgs::Boolean`:
+#   `/model/<model_name>/battery/<battery_name>/recharge/start`
+#   `/model/<model_name>/battery/<battery_name>/recharge/stop`
+# - If `recharge_by_topic` is true, the plugin also accepts `gz::msgs::Boolean` messages published on topics with those
+#   exact same names.
+#
+# The battery state is published by Gazebo on:
+# `/model/<model_name>/battery/<battery_name>/state`
+battery:
+  enabled: true
+  name: main_battery
+  voltage: 24.0
+  capacity: 20.0
+  power_load: 0.0
+  fix_issue_225: true
+
+###################################################################################################
+# Base pose ground truth publisher
+###################################################################################################
+base_pose_ground_truth_publisher:
+  enabled: true
+  fixed_frame: map
+  offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
+  # global_offset is only applied by Gazebo Sim 10 or newer.
+  # Older Gazebo Sim versions, including Gazebo Sim 8, ignore this field.
+  global_offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
+  gaussian_noise: 0.0
+  publication_frequency: 50.0
+  nav_topic_no_cov: base_pose_ground_truth_no_cov # published
+  nav_topic_cov: base_pose_ground_truth # published
+  tf_topic: tf_sim_world_fr_robot_root_fr # published
+
+###################################################################################################
 # Front left wheel uses Gazebo contact/friction parameters.
-################################################################################
+###################################################################################################
 front_left_wheel:
   enabled: true
   max_contacts: 10
@@ -9,9 +81,9 @@ front_left_wheel:
   slip1: 0.0
   slip2: 0.0
 
-################################################################################
+###################################################################################################
 # Front right wheel uses Gazebo contact/friction parameters.
-################################################################################
+###################################################################################################
 front_right_wheel:
   enabled: true
   max_contacts: 10
@@ -20,9 +92,9 @@ front_right_wheel:
   slip1: 0.0
   slip2: 0.0
 
-################################################################################
+###################################################################################################
 # Back left wheel uses Gazebo contact/friction parameters.
-################################################################################
+###################################################################################################
 rear_left_wheel:
   enabled: true
   max_contacts: 10
@@ -31,9 +103,9 @@ rear_left_wheel:
   slip1: 0.0
   slip2: 0.0
 
-################################################################################
+###################################################################################################
 # Back right wheel uses Gazebo contact/friction parameters.
-################################################################################
+###################################################################################################
 rear_right_wheel:
   enabled: true
   max_contacts: 10
@@ -42,9 +114,9 @@ rear_right_wheel:
   slip1: 0.0
   slip2: 0.0
 
-################################################################################
+###################################################################################################
 # Front 2D LiDAR is a Leuze RSL400.
-################################################################################
+###################################################################################################
 front_lidar2d:
   enabled: true
   use_gravity: true
@@ -58,9 +130,9 @@ front_lidar2d:
   gaussian_noise: {"mean": 0.0, "stddev": 0.01}
   topic: front_lidar2d/scan
 
-################################################################################
+###################################################################################################
 # Back 2D LiDAR is a Leuze RSL400.
-################################################################################
+###################################################################################################
 back_lidar2d:
   enabled: true
   use_gravity: true
@@ -74,9 +146,9 @@ back_lidar2d:
   gaussian_noise: {"mean": 0.0, "stddev": 0.01}
   topic: back_lidar2d/scan
 
-################################################################################
+###################################################################################################
 # Left 2D LiDAR is a Leuze RSL400.
-################################################################################
+###################################################################################################
 left_lidar2d:
   enabled: true
   use_gravity: true
@@ -90,9 +162,9 @@ left_lidar2d:
   gaussian_noise: {"mean": 0.0, "stddev": 0.01}
   topic: left_lidar2d/scan
 
-################################################################################
+###################################################################################################
 # Right 2D LiDAR is a Leuze RSL400.
-################################################################################
+###################################################################################################
 right_lidar2d:
   enabled: true
   use_gravity: true
@@ -106,9 +178,9 @@ right_lidar2d:
   gaussian_noise: {"mean": 0.0, "stddev": 0.01}
   topic: right_lidar2d/scan
 
-################################################################################
+###################################################################################################
 # Front top LiDAR is a Robosense Airy with integrated IMU.
-################################################################################
+###################################################################################################
 # Configuration for the `gpu_lidar` Gazebo plugin.
 front_top_lidar3d:
   enabled: true
@@ -119,7 +191,7 @@ front_top_lidar3d:
   hor_res_deg: 0.4
   ver_fov_deg: {"min_angle": 0, "max_angle": 90}
   ver_res_deg: 0.947
-  dist_span: {"min_dist": 0.1, "max_dist": 60}   # m
+  dist_span: {"min_dist": 0.1, "max_dist": 60} # m
   gaussian_noise: {"mean": 0, "stddev": 0.01}
   # The Gazebo plugin will publish two topics:
   # Topic <base_topic> with messages of type gz.msgs.LaserScan
@@ -177,9 +249,9 @@ front_top_lidar3d_imu:
   use_orientation: true
   topic: front_top_lidar3d/imu/data # published
 
-################################################################################
+###################################################################################################
 # Left top LiDAR is a Robosense M1 Plus.
-################################################################################
+###################################################################################################
 # Configuration for the `gpu_lidar` Gazebo plugin.
 left_top_lidar3d:
   enabled: true
@@ -206,9 +278,9 @@ left_top_lidar3d:
   # Topic <base_topic>/points with messages of type gz.msgs.PointCloudPacked
   base_topic: left_top_lidar3d/scan
 
-################################################################################
+###################################################################################################
 # Chassis IMU is a generic box IMU mounted on base_link.
-################################################################################
+###################################################################################################
 chassis_imu:
   enabled: true
   use_gravity: true
@@ -259,9 +331,9 @@ chassis_imu:
   use_orientation: true
   topic: chassis_imu/data
 
-################################################################################
+###################################################################################################
 # Fork board camera is an Orbbec Gemini 335Le RGB-D camera.
-################################################################################
+###################################################################################################
 # This variant uses one Gazebo rgbd_camera plugin for color, depth, point cloud,
 # and camera_info. It uses the depth FOV because the plugin has one shared lens
 # model. The two infrared streams and the IMU remain separate simulated sensors.
@@ -374,16 +446,3 @@ fork_board_camera_imu:
   lin_acc_gaussian_noise_bias: {mean_x: 0.0, stddev_x: 0.0, mean_y: 0.0, stddev_y: 0.0, mean_z: 0.0, stddev_z: 0.0}
   lin_acc_gaussian_noise_dynamic_bias: {stddev_x: 0.0, corr_time_x: 0.0, stddev_y: 0.0, corr_time_y: 0.0, stddev_z: 0.0, corr_time_z: 0.0}
   topic: fork_board_camera/imu/data
-
-base_pose_ground_truth_publisher:
-  enabled: true
-  fixed_frame: map
-  offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
-  # global_offset is only applied by Gazebo Sim 10 or newer.
-  # Older Gazebo Sim versions, including Gazebo Sim 8, ignore this field.
-  global_offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
-  gaussian_noise: 0.0
-  publication_frequency: 50.0
-  nav_topic_no_cov: base_pose_ground_truth_no_cov # published
-  nav_topic_cov: base_pose_ground_truth # published
-  tf_topic: tf_sim_world_fr_robot_root_fr # published

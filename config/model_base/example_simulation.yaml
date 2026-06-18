@@ -1,3 +1,62 @@
+# Parameters for a basic functional battery:
+# - `name`: The name of the battery.
+# - `voltage`: Initial voltage of the battery in volts.
+# - `capacity`: Total charge that the battery can hold in ampere-hours.
+# - `power_load`: Power load on the battery in watts.
+# - `fix_issue_225`: Enables Gazebo's corrected battery state-of-charge behavior.
+#   With this flag set:
+#     battery_runtime_hours = capacity_Ah * voltage_V / power_load_W
+#   With this flag unset:
+#     battery_runtime_hours = capacity_Ah * voltage_V / (power_load_W * 100)
+#
+# Ideal battery with no discharge:
+# - If a robot needs a battery state topic but the battery should behave like an ideal infinite battery, use the same
+#   basic battery parameters and set `power_load` to 0.
+# - The important field is `power_load: 0.0`. With zero power load, the plugin can publish battery state while the
+#   stored charge remains constant.
+# - Keep `voltage` positive. Do not use `voltage: 0.0`, because the plugin computes current from power / voltage.
+#
+# Parameters for a more realistic battery:
+# If you need to model a more realistic battery, use the basic battery parameters above and add any of the following
+# fields:
+# - `open_circuit_voltage_constant_coef`: Voltage at full charge in volts.
+#   If omitted, the macro uses the same value as `voltage`.
+# - `open_circuit_voltage_linear_coef`: Voltage decrease when the battery has  no charge.
+# - `initial_charge`: Initial charge of the battery in ampere-hours.
+# - `resistance`: Internal resistance in ohms.
+# - `smooth_current_tau`: Coefficient for smoothing current.
+# - `invert_current_sign`: Flips the sign of the current reported in the battery state message.
+# - `start_draining`: Starts draining the battery at the beginning of the simulation.
+# - `power_draining_topic`: Topic that starts power draining when a message is received.
+# - `stop_power_draining_topic`: Topic that stops power draining when a message is received.
+#
+# Charging:
+# - Whether the battery is modeled with only the basic parameters or with the more realistic parameters above, the
+#   following fields enable recharge behavior.
+# - `enable_recharge`: Enables battery recharging.
+# - `charging_time`: Hours needed to fully charge the battery with no load.
+# - `recharge_by_topic`: If true, the plugin also subscribes to Gazebo
+#   Transport message topics for starting and stopping recharge.
+# - When recharge is enabled, Gazebo always exposes these Gazebo Transport
+#   services. Both services use `gz::msgs::Boolean`:
+#   `/model/<model_name>/battery/<battery_name>/recharge/start`
+#   `/model/<model_name>/battery/<battery_name>/recharge/stop`
+# - If `recharge_by_topic` is true, the plugin also accepts `gz::msgs::Boolean`
+#   messages published on topics with those exact same names.
+#
+# The battery state is published by Gazebo on:
+# `/model/<model_name>/battery/<battery_name>/state`
+battery:
+  enabled: true
+  name: main_battery
+  voltage: 24.0
+  capacity: 20.0
+  power_load: 0.0
+  fix_issue_225: true
+
+###################################################################################################
+# Base pose ground truth publisher
+###################################################################################################
 base_pose_ground_truth_publisher:
   enabled: true
   fixed_frame: map
