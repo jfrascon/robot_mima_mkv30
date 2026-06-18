@@ -65,6 +65,12 @@ docstring-quotes = "double"
 # multiline-quotes = "single"
 
 [tool.ruff.lint.isort]
+known-third-party = [
+  "ament_index_python",
+  "launch",
+  "launch_ros",
+  "ros2_launch_helpers",
+]
 split-on-trailing-comma = false
 
 # ------------------------------------------------------------------------------
