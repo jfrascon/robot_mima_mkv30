@@ -11,7 +11,6 @@ from launch_ros.actions import Node
 from launch_ros.descriptions import ParameterFile, ParameterValue
 
 from launch import LaunchContext, LaunchDescription, LaunchDescriptionEntity
-from robot_mima_mkv30 import model_utils
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -30,7 +29,7 @@ def generate_launch_description() -> LaunchDescription:
     # Launch arguments with no default value must be provided by the caller.
     ldes: list[LaunchDescriptionEntity] = [
         DeclareLaunchArgument('namespace', default_value='', description='Project namespace'),
-        DeclareLaunchArgument('robot_model', choices=model_utils.get_models(), description='Robot model to publish'),
+        DeclareLaunchArgument('robot_model', choices=_get_models(), description='Robot model to publish'),
         DeclareLaunchArgument('robot_name', description="Robot's name"),
         DeclareLaunchArgument('params_file', description='Path to params file'),
         DeclareLaunchArgument(
@@ -141,6 +140,26 @@ def _build_xacro_command(ctx: LaunchContext) -> list[Any]:
         cmd.extend([' ', f'{arg_name}:=', _quote_xarg_value_if_needed(arg_value)])
 
     return cmd
+
+
+def _get_models() -> list[str]:
+    """
+    Return the public robot model names available to robot_state_publisher.
+
+    Public model xacro files are stored as `urdf/models/model_<robot_model>.xacro`.
+    The launch argument uses the short model name, for example `base` or `sensors1`.
+    """
+    model_file_prefix = 'model_'
+    urdf_dir = Path(get_package_share_directory('robot_mima_mkv30')).joinpath('urdf', 'models')
+
+    if not urdf_dir.is_dir():
+        raise FileNotFoundError(f'URDF directory {urdf_dir!r} does not exist.')
+
+    return sorted(
+        path.stem.removeprefix(model_file_prefix)
+        for path in urdf_dir.glob(f'{model_file_prefix}*.xacro')
+        if path.is_file()
+    )
 
 
 def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:

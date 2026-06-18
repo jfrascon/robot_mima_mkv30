@@ -4,8 +4,6 @@ from pathlib import Path
 import yaml
 from conftest import PACKAGE_DIR
 
-from robot_mima_mkv30 import model_utils
-
 LAUNCH_SCOPED_XACRO_ARGS = {'sim_file', 'namespace', 'robot_name', 'ros2_control_config_file'}
 
 BASE_MODEL_XACRO_ARGS = {
@@ -103,17 +101,10 @@ def test_example_model_xacro_args_match_the_yaml_contract() -> None:
     assert not LAUNCH_SCOPED_XACRO_ARGS.intersection(sensors1_model_xacro_args)
 
 
-def test_model_utils_no_longer_exposes_xargs_helpers() -> None:
-    removed_api_names = {
-        'declare_launch_arguments',
-        'get_launch_configuration_entries',
-        'get_models_with_xargs',
-        'get_xarg_names',
-        'model_has_xargs',
-    }
+def test_model_utils_module_is_removed() -> None:
+    model_utils_path = PACKAGE_DIR / 'robot_mima_mkv30' / 'model_utils.py'
 
-    for api_name in removed_api_names:
-        assert not hasattr(model_utils, api_name)
+    assert not model_utils_path.exists()
 
 
 def test_sensors1_model_declares_sensor_model_arguments() -> None:
