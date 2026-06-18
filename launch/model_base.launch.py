@@ -2,6 +2,7 @@ import os
 
 import ros2_launch_helpers as rlh
 from ament_index_python.packages import get_package_share_directory
+from launch import LaunchDescription, LaunchDescriptionEntity
 from launch.actions import (
     DeclareLaunchArgument,
     GroupAction,
@@ -13,8 +14,6 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-
-from launch import LaunchDescription, LaunchDescriptionEntity
 
 ROBOT_MODEL = 'base'
 
