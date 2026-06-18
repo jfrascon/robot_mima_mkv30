@@ -89,9 +89,6 @@ def _launch_ros2_control(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
         ctx, normalize_typed_substitution(LaunchConfiguration('params_file_allow_substs'), bool), bool
     )
 
-    if not params_file:
-        raise RuntimeError('params_file must point to the ros2_control parameters YAML file.')
-
     if not Path(params_file).is_file():
         raise FileNotFoundError(f"Params file '{params_file}' does not exist.")
 
@@ -210,10 +207,20 @@ def _launch_ros2_control(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
 def _get_remappings_ros_args(remappings: list[str]) -> list[str]:
     """
     Convert one controller remapping list to ROS remap argument fragments.
+
+    Controller spawners receive controller-specific ROS arguments as one string
+    after `--controller-ros-args`. This helper expands each compact remapping
+    string into the argv fragments expected by ROS.
+
+    Example:
+    `['~/reference:=cmd_vel', '~/odometry:=odom']` becomes
+    `['--remap', '~/reference:=cmd_vel', '--remap', '~/odometry:=odom']`.
     """
     remap_arguments: list[str] = []
 
     for remapping in remappings:
+        # Each remapping must be preceded by its own `--remap` flag. A single
+        # `--remap` flag followed by several remappings is not valid ROS argv.
         remap_arguments.extend(['--remap', remapping])
 
     return remap_arguments
@@ -230,6 +237,9 @@ def _merge_remappings(
     entry replaces the complete list for that controller; it is not appended to
     the default list. Unknown controller names raise an error instead of being
     ignored.
+
+    A new mapping is returned so the default mapping owned by this launch file is
+    not mutated while applying per-launch overrides.
     """
     ros2_control_remappings = {name: list(remappings) for name, remappings in default_ros2_control_remappings.items()}
 
@@ -251,6 +261,10 @@ def _parse_remappings(raw_value: str) -> dict[str, list[str]]:
 
     The expected value is a JSON object indexed by controller name. Each value
     is a list of ROS remapping strings written as `from:=to`.
+
+    This validation happens before launching any spawner process, so malformed
+    remapping configuration fails at launch time with a message that names the
+    controller and item that must be fixed.
     """
     try:
         config = json.loads(raw_value)

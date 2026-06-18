@@ -55,6 +55,10 @@ def generate_launch_description() -> LaunchDescription:
 def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     """
     Launch the ROS-GZ bridge for one robot instance.
+
+    The bridge is only useful when Gazebo is running, so this function returns no
+    launch entities when `use_sim_time` is false. In simulation it resolves the
+    prepared params file, applies node options, and starts `ros_gz_bridge`.
     """
 
     # Bridges are only launched in simulation, so if `use_sim_time` is false, do
@@ -67,11 +71,8 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
 
     params_file = rlh.resolve_file(LaunchConfiguration('params_file').perform(ctx))
 
-    if not params_file:
-        raise RuntimeError('params_file must point to the ROS-GZ bridge parameters YAML file.')
-
     if not Path(params_file).is_file():
-        raise FileNotFoundError(f"Params file '{params_file}' not found.")
+        raise FileNotFoundError(f"Params file '{params_file}' does not exist.")
 
     params_file_allow_substs = perform_typed_substitution(
         ctx, normalize_typed_substitution(LaunchConfiguration('params_file_allow_substs'), bool), bool
