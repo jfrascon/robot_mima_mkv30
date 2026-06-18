@@ -64,5 +64,7 @@ def test_launch_show_args_lists_expected_arguments() -> None:
     assert "'use_sim_time'" in output, output
     assert "'robot_name'" in output, output
     assert "'params_file'" in output, output
+    assert "'model_xacro_args_file'" in output, output
     assert "'params_file_allow_substs'" in output, output
+    assert "'properties_file'" not in output, output
     assert "'controller_config_file'" not in output, output

@@ -6,11 +6,13 @@ from conftest import PACKAGE_DIR
 
 from robot_mima_mkv30 import model_utils
 
-COMMON_XACRO_ARGS = {'sim_file', 'properties_file', 'namespace', 'robot_name', 'ros2_control_config_file'}
+LAUNCH_SCOPED_XACRO_ARGS = {'sim_file', 'namespace', 'robot_name', 'ros2_control_config_file'}
 
-BASE_PROPERTY_KEYS = {
+BASE_MODEL_XACRO_ARGS = {
     'chassis_use_visual',
     'chassis_use_inertial',
+    's_wheel_use_visual',
+    's_wheel_use_inertial',
     's_wheel_use_v_mesh',
     'wheel_use_visual',
     'wheel_use_v_mesh',
@@ -19,7 +21,7 @@ BASE_PROPERTY_KEYS = {
     'fork_use_inertial',
 }
 
-SENSORS1_PROPERTY_KEYS = BASE_PROPERTY_KEYS | {
+SENSORS1_MODEL_XACRO_ARGS = BASE_MODEL_XACRO_ARGS | {
     'use_front_lidar2d',
     'front_lidar2d_use_visual',
     'front_lidar2d_use_collision',
@@ -69,10 +71,10 @@ SENSORS1_PROPERTY_KEYS = BASE_PROPERTY_KEYS | {
 }
 
 
-def _load_properties(robot_model: str) -> dict[str, object]:
-    properties_file = PACKAGE_DIR / 'config' / f'model_{robot_model}' / 'example_properties.yaml'
+def _load_model_xacro_args(robot_model: str) -> dict[str, object]:
+    model_xacro_args_file = PACKAGE_DIR / 'config' / f'model_{robot_model}' / 'example_model_xacro_args.yaml'
 
-    with properties_file.open('r', encoding='utf-8') as file:
+    with model_xacro_args_file.open('r', encoding='utf-8') as file:
         data = yaml.safe_load(file) or {}
 
     assert isinstance(data, dict)
@@ -84,21 +86,21 @@ def _xacro_arg_names(xacro_file: Path) -> set[str]:
     return set(pattern.findall(xacro_file.read_text(encoding='utf-8')))
 
 
-def test_common_xacro_only_exposes_internal_launch_arguments() -> None:
+def test_common_xacro_exposes_launch_and_base_model_arguments() -> None:
     common_xacro = PACKAGE_DIR / 'urdf' / 'includes' / 'common.xacro'
 
-    assert _xacro_arg_names(common_xacro) == COMMON_XACRO_ARGS
+    assert _xacro_arg_names(common_xacro) == LAUNCH_SCOPED_XACRO_ARGS | BASE_MODEL_XACRO_ARGS
 
 
-def test_example_properties_match_the_new_yaml_contract() -> None:
-    base_properties = _load_properties('base')
-    sensors1_properties = _load_properties('sensors1')
+def test_example_model_xacro_args_match_the_yaml_contract() -> None:
+    base_model_xacro_args = _load_model_xacro_args('base')
+    sensors1_model_xacro_args = _load_model_xacro_args('sensors1')
 
-    assert set(base_properties) == BASE_PROPERTY_KEYS
-    assert set(sensors1_properties) == SENSORS1_PROPERTY_KEYS
-    assert base_properties.items() <= sensors1_properties.items()
-    assert 'sim_file' not in base_properties
-    assert 'sim_file' not in sensors1_properties
+    assert set(base_model_xacro_args) == BASE_MODEL_XACRO_ARGS
+    assert set(sensors1_model_xacro_args) == SENSORS1_MODEL_XACRO_ARGS
+    assert base_model_xacro_args.items() <= sensors1_model_xacro_args.items()
+    assert not LAUNCH_SCOPED_XACRO_ARGS.intersection(base_model_xacro_args)
+    assert not LAUNCH_SCOPED_XACRO_ARGS.intersection(sensors1_model_xacro_args)
 
 
 def test_model_utils_no_longer_exposes_xargs_helpers() -> None:
@@ -114,10 +116,10 @@ def test_model_utils_no_longer_exposes_xargs_helpers() -> None:
         assert not hasattr(model_utils, api_name)
 
 
-def test_sensors1_model_does_not_declare_model_specific_xacro_args() -> None:
+def test_sensors1_model_declares_sensor_model_arguments() -> None:
     sensors1_xacro = PACKAGE_DIR / 'urdf' / 'models' / 'model_sensors1.xacro'
 
-    assert _xacro_arg_names(sensors1_xacro) == set()
+    assert _xacro_arg_names(sensors1_xacro) == SENSORS1_MODEL_XACRO_ARGS - BASE_MODEL_XACRO_ARGS
 
 
 def test_xargs_yaml_contract_is_removed() -> None:

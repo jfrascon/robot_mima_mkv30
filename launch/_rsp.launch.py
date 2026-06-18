@@ -34,22 +34,22 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument('robot_name', description="Robot's name"),
         DeclareLaunchArgument('params_file', description='Path to params file'),
         DeclareLaunchArgument(
-            'properties_file',
-            default_value='',
-            description='Path to the YAML file that overrides model properties before expanding xacro.',
-        ),
-        DeclareLaunchArgument(
-            'sim_file',
-            default_value='',
-            description='Path to the simulation YAML. It is used only when use_sim_time is true.',
-        ),
-        DeclareLaunchArgument(
             'params_file_allow_substs',
             choices=['True', 'true', 'False', 'false'],
             description='Allow ROS launch substitutions in params_file',
         ),
         DeclareLaunchArgument(
             'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
+        ),
+        DeclareLaunchArgument(
+            'model_xacro_args_file',
+            default_value='',
+            description='Path to the YAML file with xacro arguments loaded from configuration.',
+        ),
+        DeclareLaunchArgument(
+            'sim_file',
+            default_value='',
+            description='Path to the simulation YAML. It is used only when use_sim_time is true.',
         ),
         DeclareLaunchArgument('node_name', default_value='robot_state_publisher', description='Node name'),
         DeclareLaunchArgument('node_remappings_map', default_value='{}', description=rlh.REMAPPINGS_DESC),
@@ -74,7 +74,11 @@ def generate_launch_description() -> LaunchDescription:
 
 def _build_xacro_command(ctx: LaunchContext) -> list[Any]:
     """
-    Build the xacro command list for the selected model.
+    Build the xacro command list used to generate `robot_description`.
+
+    The command always passes launch-provided xacro arguments such as namespace,
+    robot_name, sim_file, and ros2_control_config_file directly. It then appends
+    the optional xacro arguments loaded from `model_xacro_args_file`.
     """
     robot_model = LaunchConfiguration('robot_model').perform(ctx)
 
@@ -84,20 +88,31 @@ def _build_xacro_command(ctx: LaunchContext) -> list[Any]:
     )
 
     if not Path(xacro_file).is_file():
-        raise FileNotFoundError(f"File '{xacro_file}' not found")
+        raise FileNotFoundError(f"File '{xacro_file}' does not exist.")
 
     use_sim_time_lc = LaunchConfiguration('use_sim_time')
     use_sim_time_bool = perform_typed_substitution(ctx, normalize_typed_substitution(use_sim_time_lc, bool), bool)
-    properties_file = LaunchConfiguration('properties_file').perform(ctx)
+    model_xacro_args_file = LaunchConfiguration('model_xacro_args_file').perform(ctx)
     sim_file = LaunchConfiguration('sim_file').perform(ctx)
-
-    if properties_file:
-        properties_file = rlh.resolve_file(properties_file)
 
     if not use_sim_time_bool:
         sim_file = ''
     elif sim_file:
         sim_file = rlh.resolve_file(sim_file)
+
+    # All values consumed by the xacro model are xacro arguments.
+    #
+    # Some xacro arguments are launch-provided arguments. They identify the
+    # current robot instance or runtime context, so they are passed directly by
+    # the launch files. Examples are `namespace`, `robot_name`, `sim_file`, and
+    # `ros2_control_config_file`.
+    #
+    # Other xacro arguments are loaded from `model_xacro_args_file`. They
+    # configure model details such as optional sensors, visuals, collisions,
+    # inertias, and mesh choices. These values usually change together and are
+    # easier to review in a YAML file, so the launch file loads them and passes
+    # them to xacro as regular xacro arguments.
+    model_xacro_args = _load_model_xacro_args(model_xacro_args_file)
 
     cmd: list[Any] = [
         FindExecutable(name='xacro'),
@@ -109,11 +124,21 @@ def _build_xacro_command(ctx: LaunchContext) -> list[Any]:
         LaunchConfiguration('robot_name'),
         ' ros2_control_config_file:=',
         LaunchConfiguration('params_file'),
-        ' properties_file:=',
-        _quote_xarg_value_if_needed(properties_file),
         ' sim_file:=',
         _quote_xarg_value_if_needed(sim_file),
     ]
+
+    # Add xacro arguments loaded from model_xacro_args_file. Values containing
+    # whitespace are quoted so xacro parses each value as one token.
+    for arg_name, arg_value in model_xacro_args.items():
+        if arg_value is None:
+            arg_value = ''
+        elif isinstance(arg_value, (bool, int, float, str)):
+            arg_value = str(arg_value)
+        else:
+            raise TypeError(f"Model xacro argument '{arg_name}' must be a YAML scalar, got {type(arg_value).__name__}.")
+
+        cmd.extend([' ', f'{arg_name}:=', _quote_xarg_value_if_needed(arg_value)])
 
     return cmd
 
@@ -123,9 +148,6 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     Launch robot_state_publisher for the selected model.
     """
     params_file = rlh.resolve_file(LaunchConfiguration('params_file').perform(ctx))
-
-    if not params_file:
-        raise RuntimeError('params_file must point to the robot_state_publisher YAML file.')
 
     if not Path(params_file).is_file():
         raise FileNotFoundError(f"Params file '{params_file}' does not exist.")
@@ -185,6 +207,52 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
             respawn_delay=node_options[node_name]['respawn_delay'],
         )
     ]
+
+
+def _load_model_xacro_args(model_xacro_args_file: str) -> dict[str, Any]:
+    """
+    Load xacro arguments from the optional YAML configuration file.
+
+    An empty `model_xacro_args_file` means that no xacro arguments are loaded from YAML.
+
+    This function does not catch exceptions raised by `rlh.read_yaml_file`.
+    Resolution, filesystem, encoding, and YAML parsing errors propagate and fail the launch.
+    See `ros2_launch_helpers.read_yaml_file` for the exact exception contract.
+
+    :param model_xacro_args_file: Path or URI to the YAML file with xacro arguments loaded from configuration.
+    :return: Mapping from xacro argument name to xacro argument value.
+    :raises TypeError: If the YAML top level is not a mapping or if a key is not a string.
+    :raises ValueError: If the YAML file sets a launch-provided xacro argument.
+    """
+    if not model_xacro_args_file:
+        return {}
+
+    resolved_model_xacro_args_file, model_xacro_args = rlh.read_yaml_file(model_xacro_args_file)
+
+    # rlh.read_yaml_file returns None when the YAML file contains only comments or whitespace.
+    if model_xacro_args is None:
+        model_xacro_args = {}
+
+    if not isinstance(model_xacro_args, dict):
+        raise TypeError(
+            f"Model xacro args file '{resolved_model_xacro_args_file}' must contain a YAML mapping at the top level, "
+            f'got {type(model_xacro_args).__name__}.'
+        )
+
+    for arg_name in model_xacro_args:
+        if not isinstance(arg_name, str):
+            raise TypeError(
+                f"Model xacro args file '{resolved_model_xacro_args_file}' contains a non-string key "
+                f'{arg_name!r} of type {type(arg_name).__name__}.'
+            )
+        if arg_name in ('namespace', 'robot_name', 'sim_file', 'ros2_control_config_file'):
+            raise ValueError(
+                f"Model xacro args file '{resolved_model_xacro_args_file}' sets launch-provided xacro argument "
+                f"'{arg_name}'. Launch-provided xacro arguments are passed directly by the launch files and must not "
+                'be set in model_xacro_args_file.'
+            )
+
+    return model_xacro_args
 
 
 def _quote_xarg_value_if_needed(raw_value: str) -> str:

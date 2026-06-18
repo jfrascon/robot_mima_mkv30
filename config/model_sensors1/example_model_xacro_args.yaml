@@ -1,5 +1,5 @@
-# Example model properties for the MKV30 sensors1 model.
-# A custom properties file may define only the values that need to change.
+# Example xacro arguments loaded from YAML for the MKV30 sensors1 model.
+# A custom model xacro args file may define only the values that need to change.
 
 ###################################################################################################
 # Chassis
@@ -13,7 +13,9 @@ chassis_use_inertial: true
 ###################################################################################################
 
 # Applies to both front steerable wheels: front_left_wheel and front_right_wheel.
+s_wheel_use_visual: true
 s_wheel_use_v_mesh: true
+s_wheel_use_inertial: true
 
 ###################################################################################################
 # Wheels
@@ -37,33 +39,33 @@ fork_use_inertial: false
 
 use_front_lidar2d: true
 front_lidar2d_use_visual: true
-front_lidar2d_use_collision: true
 front_lidar2d_use_v_mesh: true
 front_lidar2d_v_mesh_use_low_res: true
+front_lidar2d_use_collision: true
 front_lidar2d_use_c_mesh: false
 front_lidar2d_c_mesh_use_low_res: true
 
 use_back_lidar2d: true
 back_lidar2d_use_visual: true
-back_lidar2d_use_collision: true
 back_lidar2d_use_v_mesh: true
 back_lidar2d_v_mesh_use_low_res: true
+back_lidar2d_use_collision: true
 back_lidar2d_use_c_mesh: false
 back_lidar2d_c_mesh_use_low_res: true
 
 use_left_lidar2d: true
 left_lidar2d_use_visual: true
-left_lidar2d_use_collision: true
 left_lidar2d_use_v_mesh: true
 left_lidar2d_v_mesh_use_low_res: true
+left_lidar2d_use_collision: true
 left_lidar2d_use_c_mesh: false
 left_lidar2d_c_mesh_use_low_res: true
 
 use_right_lidar2d: true
 right_lidar2d_use_visual: true
-right_lidar2d_use_collision: true
 right_lidar2d_use_v_mesh: true
 right_lidar2d_v_mesh_use_low_res: true
+right_lidar2d_use_collision: true
 right_lidar2d_use_c_mesh: false
 right_lidar2d_c_mesh_use_low_res: true
 
@@ -73,9 +75,9 @@ right_lidar2d_c_mesh_use_low_res: true
 
 use_front_top_lidar3d: true
 front_top_lidar3d_use_visual: true
-front_top_lidar3d_use_collision: true
 front_top_lidar3d_use_v_mesh: true
 front_top_lidar3d_v_mesh_use_low_res: true
+front_top_lidar3d_use_collision: true
 front_top_lidar3d_use_c_mesh: false
 front_top_lidar3d_c_mesh_use_low_res: true
 
@@ -89,9 +91,9 @@ left_top_lidar3d_use_collision: true
 
 use_fork_board_camera: true
 fork_board_camera_use_visual: true
-fork_board_camera_use_collision: true
 fork_board_camera_use_v_mesh: true
 fork_board_camera_v_mesh_use_low_res: true
+fork_board_camera_use_collision: true
 fork_board_camera_use_c_mesh: false
 fork_board_camera_c_mesh_use_low_res: true
 

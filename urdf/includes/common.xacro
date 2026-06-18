@@ -11,9 +11,18 @@
 
   <xacro:arg name="namespace"                default=""/>
   <xacro:arg name="robot_name"               default="mima_mkv30"/>
-  <xacro:arg name="properties_file"          default=""/>
   <xacro:arg name="sim_file"                 default=""/>
   <xacro:arg name="ros2_control_config_file" default=""/>
+  <xacro:arg name="chassis_use_visual"       default="True"/>
+  <xacro:arg name="chassis_use_inertial"     default="True"/>
+  <xacro:arg name="s_wheel_use_visual"       default="True"/>
+  <xacro:arg name="s_wheel_use_v_mesh"       default="True"/>
+  <xacro:arg name="s_wheel_use_inertial"     default="True"/>
+  <xacro:arg name="wheel_use_visual"         default="True"/>
+  <xacro:arg name="wheel_use_v_mesh"         default="True"/>
+  <xacro:arg name="wheel_use_inertial"       default="True"/>
+  <xacro:arg name="fork_use_visual"          default="True"/>
+  <xacro:arg name="fork_use_inertial"        default="False"/>
 
   <!--
   PROPERTIES
@@ -21,11 +30,7 @@
 
   <xacro:property name="namespace"       value="$(arg namespace)"/>
   <xacro:property name="robot_name"      value="$(arg robot_name)"/>
-  <xacro:property name="properties_file" value="$(arg properties_file)"/>
   <xacro:property name="sim_file"        value="$(arg sim_file)"/>
-
-  <xacro:property name="properties_cfg"
-                  value="${xacro.load_yaml(properties_file) if properties_file != '' else dict()}"/>
 
   <xacro:property name="sim_cfg"
                   value="${xacro.load_yaml(sim_file) if sim_file != '' else dict()}"/>
@@ -41,15 +46,17 @@
 
   <!-- Chassis fixed model properties. -->
   <xacro:property name="chassis_color"           value="0.831372549 0 0 1"/>
-  <xacro:property name="chassis_use_visual"      value="${properties_cfg.get('chassis_use_visual', True)}"/>
-  <xacro:property name="chassis_use_inertial"    value="${properties_cfg.get('chassis_use_inertial', True)}"/>
+  <xacro:property name="chassis_use_visual"      value="$(arg chassis_use_visual)"/>
+  <xacro:property name="chassis_use_inertial"    value="$(arg chassis_use_inertial)"/>
   <xacro:property name="chassis_size_x"          value="${wheelbase}"/>
   <xacro:property name="chassis_size_y"          value="0.7"/>
   <xacro:property name="chassis_size_z"          value="1.5"/>
   <xacro:property name="chassis_mass"            value="3500.0"/>
 
   <!-- Steerable wheel launch-facing properties. -->
-  <xacro:property name="s_wheel_use_v_mesh"              value="${properties_cfg.get('s_wheel_use_v_mesh', True)}"/>
+  <xacro:property name="s_wheel_use_visual"              value="$(arg s_wheel_use_visual)"/>
+  <xacro:property name="s_wheel_use_inertial"            value="$(arg s_wheel_use_inertial)"/>
+  <xacro:property name="s_wheel_use_v_mesh"              value="$(arg s_wheel_use_v_mesh)"/>
   <xacro:property name="s_wheel_color"                   value="0 0 0 1"/>
   <xacro:property name="s_wheel_steering_joint_limits"   value="-0.7853981633974483 0.7853981633974483 100.0 100000.0"/>
   <xacro:property name="s_wheel_steering_joint_dynamics" value="0.001 0.001"/>
@@ -75,9 +82,9 @@
   <xacro:property name="s_wheel_mass"                    value="100.0"/>
 
   <!-- Wheel launch-facing properties. -->
-  <xacro:property name="wheel_use_visual"                value="${properties_cfg.get('wheel_use_visual', True)}"/>
-  <xacro:property name="wheel_use_inertial"              value="${properties_cfg.get('wheel_use_inertial', True)}"/>
-  <xacro:property name="wheel_use_v_mesh"                value="${properties_cfg.get('wheel_use_v_mesh', True)}"/>
+  <xacro:property name="wheel_use_visual"                value="$(arg wheel_use_visual)"/>
+  <xacro:property name="wheel_use_inertial"              value="$(arg wheel_use_inertial)"/>
+  <xacro:property name="wheel_use_v_mesh"                value="$(arg wheel_use_v_mesh)"/>
   <xacro:property name="wheel_color"                     value="0 0 0 1"/>
   <xacro:property name="wheel_rotation_joint_limits"     value="1000.0 1000.0"/>
   <xacro:property name="wheel_rotation_joint_dynamics"   value="0.001 0.001"/>
@@ -105,8 +112,8 @@
   <xacro:property name="fork_mast_color"        value="0.2 0.2 0.2 1"/>
   <xacro:property name="fork_board_color"       value="0.8 0.8 0.8 1"/>
   <xacro:property name="fork_tine_color"        value="0.95 0.95 0.95 1"/>
-  <xacro:property name="fork_use_visual"        value="${properties_cfg.get('fork_use_visual', True)}"/>
-  <xacro:property name="fork_use_inertial"      value="${properties_cfg.get('fork_use_inertial', False)}"/>
+  <xacro:property name="fork_use_visual"        value="$(arg fork_use_visual)"/>
+  <xacro:property name="fork_use_inertial"      value="$(arg fork_use_inertial)"/>
   <xacro:property name="fork_mast_limits"       value="-0.05 0.09 0.2 100000.0"/>
   <xacro:property name="fork_holder_limits"     value="0.0 3.0 0.2 100000.0"/>
   <xacro:property name="fork_board_limits"      value="-0.075 0.075 0.2 100000.0"/>
@@ -176,8 +183,8 @@
     name="front_left_wheel"
     prefix="${robot_prefix}"
     parent_frame="${robot_prefix}base_link"
-    use_visual="${wheel_use_visual}"
-    use_inertial="${wheel_use_inertial}"
+    use_visual="${s_wheel_use_visual}"
+    use_inertial="${s_wheel_use_inertial}"
     v_mesh="${s_wheel_v_mesh}"
     v_mesh_scale="${s_wheel_v_mesh_scale}"
     color="${s_wheel_color}"
@@ -207,8 +214,8 @@
     name="front_right_wheel"
     prefix="${robot_prefix}"
     parent_frame="${robot_prefix}base_link"
-    use_visual="${wheel_use_visual}"
-    use_inertial="${wheel_use_inertial}"
+    use_visual="${s_wheel_use_visual}"
+    use_inertial="${s_wheel_use_inertial}"
     v_mesh="${s_wheel_v_mesh}"
     v_mesh_scale="${s_wheel_v_mesh_scale}"
     color="${s_wheel_color}"

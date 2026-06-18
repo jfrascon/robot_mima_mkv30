@@ -1,5 +1,5 @@
-# Example model properties for the MKV30 base model.
-# A custom properties file may define only the values that need to change.
+# Example xacro arguments loaded from YAML for the MKV30 base model.
+# A custom model xacro args file may define only the values that need to change.
 
 ###################################################################################################
 # Chassis
@@ -13,7 +13,9 @@ chassis_use_inertial: true
 ###################################################################################################
 
 # Applies to both front steerable wheels: front_left_wheel and front_right_wheel.
+s_wheel_use_visual: true
 s_wheel_use_v_mesh: true
+s_wheel_use_inertial: true
 
 ###################################################################################################
 # Wheels
