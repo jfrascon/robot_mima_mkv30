@@ -15,7 +15,6 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 from launch import LaunchDescription, LaunchDescriptionEntity
-from robot_mima_mkv30 import model_utils
 
 ROBOT_MODEL = 'base'
 
@@ -129,7 +128,7 @@ def generate_launch_description() -> LaunchDescription:
         SetLaunchConfiguration('robot_front_wheels_radius', '0.2285'),
         SetLaunchConfiguration('robot_rear_wheels_radius', '0.2795'),
         # Prepare params_file for consumers that need a concrete YAML path.
-        OpaqueFunction(function=model_utils.process_params_file),
+        OpaqueFunction(function=rlh.process_params_file),
         _include_rsp(),
         _include_ros2_control(),
         _include_bridge(),
