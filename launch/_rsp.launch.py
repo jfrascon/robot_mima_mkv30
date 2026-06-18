@@ -34,6 +34,16 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument('robot_name', description="Robot's name"),
         DeclareLaunchArgument('params_file', description='Path to params file'),
         DeclareLaunchArgument(
+            'properties_file',
+            default_value='',
+            description='Path to the YAML file that overrides model properties before expanding xacro.',
+        ),
+        DeclareLaunchArgument(
+            'sim_file',
+            default_value='',
+            description='Path to the simulation YAML. It is used only when use_sim_time is true.',
+        ),
+        DeclareLaunchArgument(
             'params_file_allow_substs',
             choices=['True', 'true', 'False', 'false'],
             description='Allow ROS launch substitutions in params_file',
@@ -45,7 +55,6 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument('node_remappings_map', default_value='{}', description=rlh.REMAPPINGS_DESC),
         DeclareLaunchArgument('node_options_map', default_value='{}', description=rlh.NODE_OPTIONS_DESC),
         DeclareLaunchArgument('node_logging_options_map', default_value='{}', description=rlh.LOGGING_OPTIONS_DESC),
-        OpaqueFunction(function=_declare_model_launch_arguments),
         OpaqueFunction(
             function=rlh.set_robot_namespace,
             kwargs={
@@ -79,53 +88,34 @@ def _build_xacro_command(ctx: LaunchContext) -> list[Any]:
 
     use_sim_time_lc = LaunchConfiguration('use_sim_time')
     use_sim_time_bool = perform_typed_substitution(ctx, normalize_typed_substitution(use_sim_time_lc, bool), bool)
+    properties_file = LaunchConfiguration('properties_file').perform(ctx)
+    sim_file = LaunchConfiguration('sim_file').perform(ctx)
+
+    if properties_file:
+        properties_file = rlh.resolve_file(properties_file)
+
+    if not use_sim_time_bool:
+        sim_file = ''
+    elif sim_file:
+        sim_file = rlh.resolve_file(sim_file)
 
     cmd: list[Any] = [
         FindExecutable(name='xacro'),
         ' ',
         xacro_file,
-        ' use_sim_mode:=',
-        use_sim_time_lc,
         ' namespace:=',
         LaunchConfiguration('namespace'),
         ' robot_name:=',
         LaunchConfiguration('robot_name'),
         ' ros2_control_config_file:=',
         LaunchConfiguration('params_file'),
+        ' properties_file:=',
+        _quote_xarg_value_if_needed(properties_file),
+        ' sim_file:=',
+        _quote_xarg_value_if_needed(sim_file),
     ]
 
-    # Configure the robot's xacro file by means of xacro:args passed as launch
-    # context keys. Iterate over the xacro:arg names of the selected model and
-    # get their values from the launch context.
-    for xarg_name in model_utils.get_xarg_names(robot_model):
-        value = LaunchConfiguration(xarg_name).perform(ctx)
-
-        if xarg_name == 'sim_file':
-            # `sim_file` is a xacro argument. When the application is running
-            # without simulation time, the simulation file is not used.
-            if not use_sim_time_bool:
-                value = ''
-            elif value:
-                value = rlh.resolve_file(value)
-
-        cmd.extend([' ', f'{xarg_name}:=', _quote_xarg_value_if_needed(value)])
-
     return cmd
-
-
-def _declare_model_launch_arguments(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
-    """
-    Declare the model launch arguments for the selected robot model.
-    """
-    robot_model = LaunchConfiguration('robot_model').perform(ctx)
-
-    if not model_utils.model_exists(robot_model):
-        raise ValueError(
-            f"Model '{robot_model}' for 'robot_mima_mkv30' is not available. "
-            f'Available robot models: {", ".join(model_utils.get_models())}'
-        )
-
-    return model_utils.declare_launch_arguments(robot_model)
 
 
 def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:

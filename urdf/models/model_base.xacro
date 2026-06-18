@@ -9,7 +9,7 @@
   # ros2_control.
   ##############################################################################
   -->
-  <xacro:if value="${use_sim_mode}">
+  <xacro:if value="${sim_file != ''}">
     <xacro:ros2_control_sim
       ros2_control_config_file="$(arg ros2_control_config_file)"
       robot_namespace="${robot_namespace}"/>

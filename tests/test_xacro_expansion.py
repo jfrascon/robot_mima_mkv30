@@ -19,9 +19,10 @@ def test_model_base_sim_expands_to_valid_urdf(tmp_path: Path) -> None:
     urdf_path = tmp_path / 'model_base_sim.urdf'
     xacro_path = PACKAGE_DIR / 'urdf' / 'models' / 'model_base.xacro'
     controllers = PACKAGE_DIR / 'config' / 'model_base' / 'example_params.yaml'
+    sim_file = PACKAGE_DIR / 'config' / 'model_base' / 'example_simulation.yaml'
 
     result = run_bash(
-        f'xacro "{xacro_path}" use_sim_mode:=True ros2_control_config_file:="{controllers}" '
+        f'xacro "{xacro_path}" sim_file:="{sim_file}" ros2_control_config_file:="{controllers}" '
         f'> "{urdf_path}" && check_urdf "{urdf_path}"'
     )
     output = result.stdout + result.stderr

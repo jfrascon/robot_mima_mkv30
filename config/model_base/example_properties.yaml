@@ -1,0 +1,32 @@
+# Example model properties for the MKV30 base model.
+# A custom properties file may define only the values that need to change.
+
+###################################################################################################
+# Chassis
+###################################################################################################
+
+chassis_use_visual: true
+chassis_use_inertial: true
+
+###################################################################################################
+# Steerable wheels
+###################################################################################################
+
+# Applies to both front steerable wheels: front_left_wheel and front_right_wheel.
+s_wheel_use_v_mesh: true
+
+###################################################################################################
+# Wheels
+###################################################################################################
+
+# Applies to both rear non-steerable wheels: rear_left_wheel and rear_right_wheel.
+wheel_use_visual: true
+wheel_use_v_mesh: true
+wheel_use_inertial: true
+
+###################################################################################################
+# Fork
+###################################################################################################
+
+fork_use_visual: true
+fork_use_inertial: false

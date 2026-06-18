@@ -9,129 +9,75 @@
   <xacro:include filename="$(find robot_mima_mkv30)/urdf/includes/ros2_control_sim_macro.xacro"/>
   <xacro:include filename="$(find robot_mima_mkv30)/urdf/includes/ros2_control_real_macro.xacro"/>
 
-  <xacro:arg name="use_front_lidar2d"                           default="True"/> <!-- leuze_rsl400 -->
-  <xacro:arg name="front_lidar2d_use_visual"                    default="True"/>
-  <xacro:arg name="front_lidar2d_use_collision"                 default="True"/>
-  <xacro:arg name="front_lidar2d_use_v_mesh"                    default="True"/>
-  <xacro:arg name="front_lidar2d_v_mesh_use_low_res"            default="True"/>
-  <xacro:arg name="front_lidar2d_use_c_mesh"                    default="False"/>
-  <xacro:arg name="front_lidar2d_c_mesh_use_low_res"            default="True"/>
+  <!-- Model properties loaded from the file passed through the `properties_file` Xacro argument. -->
 
-  <xacro:arg name="use_back_lidar2d"                            default="True"/> <!-- leuze_rsl400 -->
-  <xacro:arg name="back_lidar2d_use_visual"                     default="True"/>
-  <xacro:arg name="back_lidar2d_use_collision"                  default="True"/>
-  <xacro:arg name="back_lidar2d_use_v_mesh"                     default="True"/>
-  <xacro:arg name="back_lidar2d_v_mesh_use_low_res"             default="True"/>
-  <xacro:arg name="back_lidar2d_use_c_mesh"                     default="False"/>
-  <xacro:arg name="back_lidar2d_c_mesh_use_low_res"             default="True"/>
-
-  <xacro:arg name="use_left_lidar2d"                            default="True"/> <!-- leuze_rsl400 -->
-  <xacro:arg name="left_lidar2d_use_visual"                     default="True"/>
-  <xacro:arg name="left_lidar2d_use_collision"                  default="True"/>
-  <xacro:arg name="left_lidar2d_use_v_mesh"                     default="True"/>
-  <xacro:arg name="left_lidar2d_v_mesh_use_low_res"             default="True"/>
-  <xacro:arg name="left_lidar2d_use_c_mesh"                     default="False"/>
-  <xacro:arg name="left_lidar2d_c_mesh_use_low_res"             default="True"/>
-
-  <xacro:arg name="use_right_lidar2d"                           default="True"/> <!-- leuze_rsl400 -->
-  <xacro:arg name="right_lidar2d_use_visual"                    default="True"/>
-  <xacro:arg name="right_lidar2d_use_collision"                 default="True"/>
-  <xacro:arg name="right_lidar2d_use_v_mesh"                    default="True"/>
-  <xacro:arg name="right_lidar2d_v_mesh_use_low_res"            default="True"/>
-  <xacro:arg name="right_lidar2d_use_c_mesh"                    default="False"/>
-  <xacro:arg name="right_lidar2d_c_mesh_use_low_res"            default="True"/>
-
-  <xacro:arg name="use_front_top_lidar3d"                       default="True"/> <!-- robosense_airy -->
-  <xacro:arg name="front_top_lidar3d_use_visual"                default="True"/>
-  <xacro:arg name="front_top_lidar3d_use_collision"             default="True"/>
-  <xacro:arg name="front_top_lidar3d_use_v_mesh"                default="True"/>
-  <xacro:arg name="front_top_lidar3d_v_mesh_use_low_res"        default="True"/>
-  <xacro:arg name="front_top_lidar3d_use_c_mesh"                default="False"/>
-  <xacro:arg name="front_top_lidar3d_c_mesh_use_low_res"        default="True"/>
-
-  <xacro:arg name="use_left_top_lidar3d"                        default="True"/> <!-- robosense_m1_plus -->
-  <xacro:arg name="left_top_lidar3d_use_visual"                 default="True"/>
-  <xacro:arg name="left_top_lidar3d_use_collision"              default="True"/>
-
-  <xacro:arg name="use_chassis_imu"                             default="True"/> <!-- box_imu -->
-
-  <xacro:arg name="use_fork_board_camera"                       default="True"/> <!-- orbbec_gemini335le_rgbd -->
-  <xacro:arg name="fork_board_camera_use_visual"                default="True"/>
-  <xacro:arg name="fork_board_camera_use_collision"             default="True"/>
-  <xacro:arg name="fork_board_camera_use_v_mesh"                default="True"/>
-  <xacro:arg name="fork_board_camera_v_mesh_use_low_res"        default="True"/>
-  <xacro:arg name="fork_board_camera_use_c_mesh"                default="False"/>
-  <xacro:arg name="fork_board_camera_c_mesh_use_low_res"        default="True"/>
-
-  <!-- From args to properties for easier use in macros and conditionals  -->
-
-  <xacro:property name="use_front_lidar2d"                           value="$(arg use_front_lidar2d)"/>
-  <xacro:property name="front_lidar2d_use_visual"                    value="$(arg front_lidar2d_use_visual)"/>
-  <xacro:property name="front_lidar2d_use_collision"                 value="$(arg front_lidar2d_use_collision)"/>
-  <xacro:property name="front_lidar2d_use_v_mesh"                    value="$(arg front_lidar2d_use_v_mesh)"/>
-  <xacro:property name="front_lidar2d_v_mesh_use_low_res"            value="$(arg front_lidar2d_v_mesh_use_low_res)"/>
+  <xacro:property name="use_front_lidar2d"                           value="${properties_cfg.get('use_front_lidar2d', True)}"/>
+  <xacro:property name="front_lidar2d_use_visual"                    value="${properties_cfg.get('front_lidar2d_use_visual', True)}"/>
+  <xacro:property name="front_lidar2d_use_collision"                 value="${properties_cfg.get('front_lidar2d_use_collision', True)}"/>
+  <xacro:property name="front_lidar2d_use_v_mesh"                    value="${properties_cfg.get('front_lidar2d_use_v_mesh', True)}"/>
+  <xacro:property name="front_lidar2d_v_mesh_use_low_res"            value="${properties_cfg.get('front_lidar2d_v_mesh_use_low_res', True)}"/>
   <xacro:property name="front_lidar2d_color"                         value="1 0.831372549 0.164705882 1"/>
-  <xacro:property name="front_lidar2d_use_c_mesh"                    value="$(arg front_lidar2d_use_c_mesh)"/>
-  <xacro:property name="front_lidar2d_c_mesh_use_low_res"            value="$(arg front_lidar2d_c_mesh_use_low_res)"/>
+  <xacro:property name="front_lidar2d_use_c_mesh"                    value="${properties_cfg.get('front_lidar2d_use_c_mesh', False)}"/>
+  <xacro:property name="front_lidar2d_c_mesh_use_low_res"            value="${properties_cfg.get('front_lidar2d_c_mesh_use_low_res', True)}"/>
   <xacro:property name="front_lidar2d_mount"                         value="2.1 0.0 -0.1 0 0 0"/>
 
-  <xacro:property name="use_back_lidar2d"                            value="$(arg use_back_lidar2d)"/>
-  <xacro:property name="back_lidar2d_use_visual"                     value="$(arg back_lidar2d_use_visual)"/>
-  <xacro:property name="back_lidar2d_use_collision"                  value="$(arg back_lidar2d_use_collision)"/>
-  <xacro:property name="back_lidar2d_use_v_mesh"                     value="$(arg back_lidar2d_use_v_mesh)"/>
-  <xacro:property name="back_lidar2d_v_mesh_use_low_res"             value="$(arg back_lidar2d_v_mesh_use_low_res)"/>
+  <xacro:property name="use_back_lidar2d"                            value="${properties_cfg.get('use_back_lidar2d', True)}"/>
+  <xacro:property name="back_lidar2d_use_visual"                     value="${properties_cfg.get('back_lidar2d_use_visual', True)}"/>
+  <xacro:property name="back_lidar2d_use_collision"                  value="${properties_cfg.get('back_lidar2d_use_collision', True)}"/>
+  <xacro:property name="back_lidar2d_use_v_mesh"                     value="${properties_cfg.get('back_lidar2d_use_v_mesh', True)}"/>
+  <xacro:property name="back_lidar2d_v_mesh_use_low_res"             value="${properties_cfg.get('back_lidar2d_v_mesh_use_low_res', True)}"/>
   <xacro:property name="back_lidar2d_color"                          value="1 0.831372549 0.164705882 1"/>
-  <xacro:property name="back_lidar2d_use_c_mesh"                     value="$(arg back_lidar2d_use_c_mesh)"/>
-  <xacro:property name="back_lidar2d_c_mesh_use_low_res"             value="$(arg back_lidar2d_c_mesh_use_low_res)"/>
+  <xacro:property name="back_lidar2d_use_c_mesh"                     value="${properties_cfg.get('back_lidar2d_use_c_mesh', False)}"/>
+  <xacro:property name="back_lidar2d_c_mesh_use_low_res"             value="${properties_cfg.get('back_lidar2d_c_mesh_use_low_res', True)}"/>
   <xacro:property name="back_lidar2d_mount"                          value="-0.7 0.0 -0.1 0 0 ${-pi}"/>
 
-  <xacro:property name="use_left_lidar2d"                            value="$(arg use_left_lidar2d)"/>
-  <xacro:property name="left_lidar2d_use_visual"                     value="$(arg left_lidar2d_use_visual)"/>
-  <xacro:property name="left_lidar2d_use_collision"                  value="$(arg left_lidar2d_use_collision)"/>
-  <xacro:property name="left_lidar2d_use_v_mesh"                     value="$(arg left_lidar2d_use_v_mesh)"/>
-  <xacro:property name="left_lidar2d_v_mesh_use_low_res"             value="$(arg left_lidar2d_v_mesh_use_low_res)"/>
+  <xacro:property name="use_left_lidar2d"                            value="${properties_cfg.get('use_left_lidar2d', True)}"/>
+  <xacro:property name="left_lidar2d_use_visual"                     value="${properties_cfg.get('left_lidar2d_use_visual', True)}"/>
+  <xacro:property name="left_lidar2d_use_collision"                  value="${properties_cfg.get('left_lidar2d_use_collision', True)}"/>
+  <xacro:property name="left_lidar2d_use_v_mesh"                     value="${properties_cfg.get('left_lidar2d_use_v_mesh', True)}"/>
+  <xacro:property name="left_lidar2d_v_mesh_use_low_res"             value="${properties_cfg.get('left_lidar2d_v_mesh_use_low_res', True)}"/>
   <xacro:property name="left_lidar2d_color"                          value="1 0.831372549 0.164705882 1"/>
-  <xacro:property name="left_lidar2d_use_c_mesh"                     value="$(arg left_lidar2d_use_c_mesh)"/>
-  <xacro:property name="left_lidar2d_c_mesh_use_low_res"             value="$(arg left_lidar2d_c_mesh_use_low_res)"/>
+  <xacro:property name="left_lidar2d_use_c_mesh"                     value="${properties_cfg.get('left_lidar2d_use_c_mesh', False)}"/>
+  <xacro:property name="left_lidar2d_c_mesh_use_low_res"             value="${properties_cfg.get('left_lidar2d_c_mesh_use_low_res', True)}"/>
   <xacro:property name="left_lidar2d_mount"                          value="0.4 0.7 -0.1 0 0 ${0.5 * pi}"/>
 
-  <xacro:property name="use_right_lidar2d"                           value="$(arg use_right_lidar2d)"/>
-  <xacro:property name="right_lidar2d_use_visual"                    value="$(arg right_lidar2d_use_visual)"/>
-  <xacro:property name="right_lidar2d_use_collision"                 value="$(arg right_lidar2d_use_collision)"/>
-  <xacro:property name="right_lidar2d_use_v_mesh"                    value="$(arg right_lidar2d_use_v_mesh)"/>
-  <xacro:property name="right_lidar2d_v_mesh_use_low_res"            value="$(arg right_lidar2d_v_mesh_use_low_res)"/>
+  <xacro:property name="use_right_lidar2d"                           value="${properties_cfg.get('use_right_lidar2d', True)}"/>
+  <xacro:property name="right_lidar2d_use_visual"                    value="${properties_cfg.get('right_lidar2d_use_visual', True)}"/>
+  <xacro:property name="right_lidar2d_use_collision"                 value="${properties_cfg.get('right_lidar2d_use_collision', True)}"/>
+  <xacro:property name="right_lidar2d_use_v_mesh"                    value="${properties_cfg.get('right_lidar2d_use_v_mesh', True)}"/>
+  <xacro:property name="right_lidar2d_v_mesh_use_low_res"            value="${properties_cfg.get('right_lidar2d_v_mesh_use_low_res', True)}"/>
   <xacro:property name="right_lidar2d_color"                         value="1 0.831372549 0.164705882 1"/>
-  <xacro:property name="right_lidar2d_use_c_mesh"                    value="$(arg right_lidar2d_use_c_mesh)"/>
-  <xacro:property name="right_lidar2d_c_mesh_use_low_res"            value="$(arg right_lidar2d_c_mesh_use_low_res)"/>
+  <xacro:property name="right_lidar2d_use_c_mesh"                    value="${properties_cfg.get('right_lidar2d_use_c_mesh', False)}"/>
+  <xacro:property name="right_lidar2d_c_mesh_use_low_res"            value="${properties_cfg.get('right_lidar2d_c_mesh_use_low_res', True)}"/>
   <xacro:property name="right_lidar2d_mount"                         value="1.4 -0.7 -0.1 0 0 ${-0.5 * pi}"/>
 
-  <xacro:property name="use_front_top_lidar3d"                       value="$(arg use_front_top_lidar3d)"/>
-  <xacro:property name="front_top_lidar3d_use_visual"                value="$(arg front_top_lidar3d_use_visual)"/>
-  <xacro:property name="front_top_lidar3d_use_collision"             value="$(arg front_top_lidar3d_use_collision)"/>
-  <xacro:property name="front_top_lidar3d_use_v_mesh"                value="$(arg front_top_lidar3d_use_v_mesh)"/>
-  <xacro:property name="front_top_lidar3d_v_mesh_use_low_res"        value="$(arg front_top_lidar3d_v_mesh_use_low_res)"/>
+  <xacro:property name="use_front_top_lidar3d"                       value="${properties_cfg.get('use_front_top_lidar3d', True)}"/>
+  <xacro:property name="front_top_lidar3d_use_visual"                value="${properties_cfg.get('front_top_lidar3d_use_visual', True)}"/>
+  <xacro:property name="front_top_lidar3d_use_collision"             value="${properties_cfg.get('front_top_lidar3d_use_collision', True)}"/>
+  <xacro:property name="front_top_lidar3d_use_v_mesh"                value="${properties_cfg.get('front_top_lidar3d_use_v_mesh', True)}"/>
+  <xacro:property name="front_top_lidar3d_v_mesh_use_low_res"        value="${properties_cfg.get('front_top_lidar3d_v_mesh_use_low_res', True)}"/>
   <xacro:property name="front_top_lidar3d_color"                     value="0 0 0 1"/>
-  <xacro:property name="front_top_lidar3d_use_c_mesh"                value="$(arg front_top_lidar3d_use_c_mesh)"/>
-  <xacro:property name="front_top_lidar3d_c_mesh_use_low_res"        value="$(arg front_top_lidar3d_c_mesh_use_low_res)"/>
+  <xacro:property name="front_top_lidar3d_use_c_mesh"                value="${properties_cfg.get('front_top_lidar3d_use_c_mesh', False)}"/>
+  <xacro:property name="front_top_lidar3d_c_mesh_use_low_res"        value="${properties_cfg.get('front_top_lidar3d_c_mesh_use_low_res', True)}"/>
   <xacro:property name="front_top_lidar3d_mount"                     value="2.0 0.0 2.0 0 ${0.5 * pi} 0"/>
 
-  <xacro:property name="use_left_top_lidar3d"                        value="$(arg use_left_top_lidar3d)"/>
-  <xacro:property name="left_top_lidar3d_use_visual"                 value="$(arg left_top_lidar3d_use_visual)"/>
-  <xacro:property name="left_top_lidar3d_use_collision"              value="$(arg left_top_lidar3d_use_collision)"/>
+  <xacro:property name="use_left_top_lidar3d"                        value="${properties_cfg.get('use_left_top_lidar3d', True)}"/>
+  <xacro:property name="left_top_lidar3d_use_visual"                 value="${properties_cfg.get('left_top_lidar3d_use_visual', True)}"/>
+  <xacro:property name="left_top_lidar3d_use_collision"              value="${properties_cfg.get('left_top_lidar3d_use_collision', True)}"/>
   <xacro:property name="left_top_lidar3d_color"                      value="0.0 0.0 0.0 1.0"/>
   <xacro:property name="left_top_lidar3d_mount"                      value="0.10 0.6 1.35 0 0 ${0.5 * pi}"/>
 
-  <xacro:property name="use_chassis_imu"                             value="$(arg use_chassis_imu)"/>
+  <xacro:property name="use_chassis_imu"                             value="${properties_cfg.get('use_chassis_imu', True)}"/>
   <xacro:property name="chassis_imu_mount"                           value="0.0 0.0 0.0 0.0 0.0 0.0"/>
 
-  <xacro:property name="use_fork_board_camera"                       value="$(arg use_fork_board_camera)"/>
-  <xacro:property name="fork_board_camera_use_visual"                value="$(arg fork_board_camera_use_visual)"/>
-  <xacro:property name="fork_board_camera_use_collision"             value="$(arg fork_board_camera_use_collision)"/>
-  <xacro:property name="fork_board_camera_use_v_mesh"                value="$(arg fork_board_camera_use_v_mesh)"/>
-  <xacro:property name="fork_board_camera_v_mesh_use_low_res"        value="$(arg fork_board_camera_v_mesh_use_low_res)"/>
+  <xacro:property name="use_fork_board_camera"                       value="${properties_cfg.get('use_fork_board_camera', True)}"/>
+  <xacro:property name="fork_board_camera_use_visual"                value="${properties_cfg.get('fork_board_camera_use_visual', True)}"/>
+  <xacro:property name="fork_board_camera_use_collision"             value="${properties_cfg.get('fork_board_camera_use_collision', True)}"/>
+  <xacro:property name="fork_board_camera_use_v_mesh"                value="${properties_cfg.get('fork_board_camera_use_v_mesh', True)}"/>
+  <xacro:property name="fork_board_camera_v_mesh_use_low_res"        value="${properties_cfg.get('fork_board_camera_v_mesh_use_low_res', True)}"/>
   <xacro:property name="fork_board_camera_color"                     value="0.1 0.1 0.1 1.0"/>
-  <xacro:property name="fork_board_camera_use_c_mesh"                value="$(arg fork_board_camera_use_c_mesh)"/>
-  <xacro:property name="fork_board_camera_c_mesh_use_low_res"        value="$(arg fork_board_camera_c_mesh_use_low_res)"/>
+  <xacro:property name="fork_board_camera_use_c_mesh"                value="${properties_cfg.get('fork_board_camera_use_c_mesh', False)}"/>
+  <xacro:property name="fork_board_camera_c_mesh_use_low_res"        value="${properties_cfg.get('fork_board_camera_c_mesh_use_low_res', True)}"/>
   <xacro:property name="fork_board_camera_mount"                     value="0.2 0.095 0.038 0 0 0"/>
 
   <!--
@@ -305,7 +251,7 @@
       parent_frame="${robot_prefix}base_link"
       use_inertial="False"
       joint_parent_fr_root_fr="${front_top_lidar3d_mount}"
-      sim_lidar_enabled="${use_sim_mode and front_top_lidar3d_sim_enabled}"
+      sim_lidar_enabled="${sim_file != '' and front_top_lidar3d_sim_enabled}"
       sim_lidar_always_on="${front_top_lidar3d_sim_always_on}"
       sim_lidar_visualize="${front_top_lidar3d_sim_visualize}"
       sim_lidar_update_rate="${front_top_lidar3d_sim_update_rate}"
@@ -316,7 +262,7 @@
       sim_lidar_dist_span="${front_top_lidar3d_sim_dist_span}"
       sim_lidar_dist_res="${front_top_lidar3d_sim_dist_res}"
       sim_lidar_gaussian_noise="${front_top_lidar3d_sim_gaussian_noise}"
-      sim_imu_enabled="${use_sim_mode and front_top_lidar3d_imu_sim_enabled}"
+      sim_imu_enabled="${sim_file != '' and front_top_lidar3d_imu_sim_enabled}"
       sim_imu_use_gravity="${front_top_lidar3d_imu_sim_use_gravity}"
       sim_imu_always_on="${front_top_lidar3d_imu_sim_always_on}"
       sim_imu_update_rate="${front_top_lidar3d_imu_sim_update_rate}"
@@ -439,7 +385,7 @@
       parent_frame="${robot_prefix}fork_board_link"
       use_inertial="False"
       joint_parent_fr_root_fr="${fork_board_camera_mount}"
-      sim_rgbd_enabled="${use_sim_mode and fork_board_camera_rgbd_sim_enabled}"
+      sim_rgbd_enabled="${sim_file != '' and fork_board_camera_rgbd_sim_enabled}"
       sim_rgbd_use_gravity="${fork_board_camera_rgbd_sim_use_gravity}"
       sim_rgbd_always_on="${fork_board_camera_rgbd_sim_always_on}"
       sim_rgbd_visualize="${fork_board_camera_rgbd_sim_visualize}"
@@ -459,7 +405,7 @@
       sim_rgbd_distortion_k_p="${fork_board_camera_rgbd_sim_distortion_k_p}"
       sim_rgbd_distortion_center="${fork_board_camera_rgbd_sim_distortion_center}"
       sim_rgbd_gaussian_noise="${fork_board_camera_rgbd_sim_gaussian_noise}"
-      sim_left_ir_enabled="${use_sim_mode and fork_board_camera_left_ir_sim_enabled}"
+      sim_left_ir_enabled="${sim_file != '' and fork_board_camera_left_ir_sim_enabled}"
       sim_left_ir_use_gravity="${fork_board_camera_left_ir_sim_use_gravity}"
       sim_left_ir_always_on="${fork_board_camera_left_ir_sim_always_on}"
       sim_left_ir_visualize="${fork_board_camera_left_ir_sim_visualize}"
@@ -478,7 +424,7 @@
       sim_left_ir_distortion_k_p="${fork_board_camera_left_ir_sim_distortion_k_p}"
       sim_left_ir_distortion_center="${fork_board_camera_left_ir_sim_distortion_center}"
       sim_left_ir_gaussian_noise="${fork_board_camera_left_ir_sim_gaussian_noise}"
-      sim_right_ir_enabled="${use_sim_mode and fork_board_camera_right_ir_sim_enabled}"
+      sim_right_ir_enabled="${sim_file != '' and fork_board_camera_right_ir_sim_enabled}"
       sim_right_ir_use_gravity="${fork_board_camera_right_ir_sim_use_gravity}"
       sim_right_ir_always_on="${fork_board_camera_right_ir_sim_always_on}"
       sim_right_ir_visualize="${fork_board_camera_right_ir_sim_visualize}"
@@ -497,7 +443,7 @@
       sim_right_ir_distortion_k_p="${fork_board_camera_right_ir_sim_distortion_k_p}"
       sim_right_ir_distortion_center="${fork_board_camera_right_ir_sim_distortion_center}"
       sim_right_ir_gaussian_noise="${fork_board_camera_right_ir_sim_gaussian_noise}"
-      sim_imu_enabled="${use_sim_mode and fork_board_camera_imu_sim_enabled}"
+      sim_imu_enabled="${sim_file != '' and fork_board_camera_imu_sim_enabled}"
       sim_imu_use_gravity="${fork_board_camera_imu_sim_use_gravity}"
       sim_imu_always_on="${fork_board_camera_imu_sim_always_on}"
       sim_imu_update_rate="${fork_board_camera_imu_sim_update_rate}"
@@ -525,7 +471,7 @@
   # ros2_control.
   ##############################################################################
   -->
-  <xacro:if value="${use_sim_mode}">
+  <xacro:if value="${sim_file != ''}">
     <xacro:ros2_control_sim
       ros2_control_config_file="$(arg ros2_control_config_file)"
       robot_namespace="${robot_namespace}"/>

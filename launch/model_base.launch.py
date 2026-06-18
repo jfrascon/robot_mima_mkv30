@@ -35,6 +35,26 @@ def generate_launch_description() -> LaunchDescription:
             description='Path to the complete robot parameters file.',
         ),
         DeclareLaunchArgument(
+            'properties_file',
+            default_value=os.path.join(
+                get_package_share_directory('robot_mima_mkv30'),
+                'config',
+                f'model_{ROBOT_MODEL}',
+                'example_properties.yaml',
+            ),
+            description='Path to the model properties YAML file.',
+        ),
+        DeclareLaunchArgument(
+            'sim_file',
+            default_value=os.path.join(
+                get_package_share_directory('robot_mima_mkv30'),
+                'config',
+                f'model_{ROBOT_MODEL}',
+                'example_simulation.yaml',
+            ),
+            description='Path to the simulation YAML file.',
+        ),
+        DeclareLaunchArgument(
             'params_file_allow_substs',
             choices=['True', 'true', 'False', 'false'],
             description='Allow ROS launch substitutions in params_file before including child launch files.',
@@ -46,13 +66,6 @@ def generate_launch_description() -> LaunchDescription:
         ),
         DeclareLaunchArgument('local_odometry_frame', description='Odometry frame name without robot_prefix.'),
     ]
-
-    # Declare the launch arguments for the xacro:args of the selected model
-    # These launch arguments configure the robot model when building the robot description with
-    # the xacro command.
-    # Please, be aware that 'sim_file' is declared via this function, because
-    # this file is used in the xacro model via a xacro argument.
-    ldes.extend(model_utils.declare_launch_arguments(ROBOT_MODEL))
 
     ldes.extend(
         [
@@ -168,12 +181,13 @@ def _include_rsp() -> GroupAction:
         'robot_name': LaunchConfiguration('robot_name'),
         'params_file': LaunchConfiguration('params_file'),
         'params_file_allow_substs': 'False',
+        'properties_file': LaunchConfiguration('properties_file'),
+        'sim_file': LaunchConfiguration('sim_file'),
         'use_sim_time': LaunchConfiguration('use_sim_time'),
         'node_name': LaunchConfiguration('rsp_node_name'),
         'node_remappings_map': LaunchConfiguration('node_remappings_map'),
         'node_options_map': LaunchConfiguration('node_options_map'),
         'node_logging_options_map': LaunchConfiguration('node_logging_options_map'),
-        **model_utils.get_launch_configuration_entries(ROBOT_MODEL),
     }
 
     return GroupAction(
