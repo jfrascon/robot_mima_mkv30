@@ -37,13 +37,10 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument('node_name', default_value='bridge', description='Node name'),
         DeclareLaunchArgument('node_options_map', default_value='{}', description=rlh.NODE_OPTIONS_DESC),
         DeclareLaunchArgument('node_logging_options_map', default_value='{}', description=rlh.LOGGING_OPTIONS_DESC),
-        OpaqueFunction(
-            function=rlh.set_robot_namespace,
-            kwargs={
-                'namespace_key': 'namespace',
-                'robot_name_key': 'robot_name',
-                'robot_namespace_key': 'robot_namespace',
-            },
+        rlh.SetRobotNamespace(
+            namespace=LaunchConfiguration('namespace'),
+            robot_name=LaunchConfiguration('robot_name'),
+            robot_namespace_key='robot_namespace',
         ),
         OpaqueFunction(function=_launch_node),
     ]

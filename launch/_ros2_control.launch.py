@@ -52,13 +52,10 @@ def generate_launch_description() -> LaunchDescription:
                     'default remappings for the matching controller.'
                 ),
             ),
-            OpaqueFunction(
-                function=rlh.set_robot_namespace,
-                kwargs={
-                    'namespace_key': 'namespace',
-                    'robot_name_key': 'robot_name',
-                    'robot_namespace_key': 'robot_namespace',
-                },
+            rlh.SetRobotNamespace(
+                namespace=LaunchConfiguration('namespace'),
+                robot_name=LaunchConfiguration('robot_name'),
+                robot_namespace_key='robot_namespace',
             ),
             OpaqueFunction(function=_launch_ros2_control),
         ]

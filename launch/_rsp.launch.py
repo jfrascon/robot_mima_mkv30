@@ -53,17 +53,12 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument('node_remappings_map', default_value='{}', description=rlh.REMAPPINGS_DESC),
         DeclareLaunchArgument('node_options_map', default_value='{}', description=rlh.NODE_OPTIONS_DESC),
         DeclareLaunchArgument('node_logging_options_map', default_value='{}', description=rlh.LOGGING_OPTIONS_DESC),
-        OpaqueFunction(
-            function=rlh.set_robot_namespace,
-            kwargs={
-                'namespace_key': 'namespace',
-                'robot_name_key': 'robot_name',
-                'robot_namespace_key': 'robot_namespace',
-            },
+        rlh.SetRobotNamespace(
+            namespace=LaunchConfiguration('namespace'),
+            robot_name=LaunchConfiguration('robot_name'),
+            robot_namespace_key='robot_namespace',
         ),
-        OpaqueFunction(
-            function=rlh.set_robot_prefix, kwargs={'robot_name_key': 'robot_name', 'robot_prefix_key': 'robot_prefix'}
-        ),
+        rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), robot_prefix_key='robot_prefix'),
         OpaqueFunction(function=_launch_node),
     ]
 

@@ -3,13 +3,7 @@ import os
 import ros2_launch_helpers as rlh
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription, LaunchDescriptionEntity
-from launch.actions import (
-    DeclareLaunchArgument,
-    GroupAction,
-    IncludeLaunchDescription,
-    OpaqueFunction,
-    SetLaunchConfiguration,
-)
+from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription, SetLaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
@@ -83,17 +77,12 @@ def generate_launch_description() -> LaunchDescription:
                 'remappings for the matching controller.'
             ),
         ),
-        OpaqueFunction(
-            function=rlh.set_robot_namespace,
-            kwargs={
-                'namespace_key': 'namespace',
-                'robot_name_key': 'robot_name',
-                'robot_namespace_key': 'robot_namespace',
-            },
+        rlh.SetRobotNamespace(
+            namespace=LaunchConfiguration('namespace'),
+            robot_name=LaunchConfiguration('robot_name'),
+            robot_namespace_key='robot_namespace',
         ),
-        OpaqueFunction(
-            function=rlh.set_robot_prefix, kwargs={'robot_name_key': 'robot_name', 'robot_prefix_key': 'robot_prefix'}
-        ),
+        rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), robot_prefix_key='robot_prefix'),
         SetLaunchConfiguration(
             'robot_odometry_frame', [LaunchConfiguration('robot_prefix'), LaunchConfiguration('local_odometry_frame')]
         ),
@@ -127,7 +116,11 @@ def generate_launch_description() -> LaunchDescription:
         SetLaunchConfiguration('robot_front_wheels_radius', '0.2285'),
         SetLaunchConfiguration('robot_rear_wheels_radius', '0.2795'),
         # Prepare params_file for consumers that need a concrete YAML path.
-        OpaqueFunction(function=rlh.process_params_file),
+        rlh.ProcessParamsFile(
+            params_file=LaunchConfiguration('params_file'),
+            allow_substs=LaunchConfiguration('params_file_allow_substs'),
+            output_params_file_key='params_file',
+        ),
         _include_rsp(),
         _include_ros2_control(),
         _include_bridge(),
