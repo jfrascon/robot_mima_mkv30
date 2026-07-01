@@ -4,6 +4,8 @@ from pathlib import Path
 import yaml
 from conftest import PACKAGE_DIR
 
+from robot_mima_mkv30.model_utils import get_models
+
 LAUNCH_SCOPED_XACRO_ARGS = {'sim_file', 'namespace', 'robot_name', 'ros2_control_config_file'}
 
 BASE_MODEL_XACRO_ARGS = {
@@ -70,7 +72,7 @@ SENSORS1_MODEL_XACRO_ARGS = BASE_MODEL_XACRO_ARGS | {
 
 
 def _load_model_xacro_args(robot_model: str) -> dict[str, object]:
-    model_xacro_args_file = PACKAGE_DIR / 'config' / f'model_{robot_model}' / 'example_model_xacro_args.yaml'
+    model_xacro_args_file = PACKAGE_DIR / 'config' / f'model_{robot_model}' / 'default_model_xacro_args.yaml'
 
     with model_xacro_args_file.open('r', encoding='utf-8') as file:
         data = yaml.safe_load(file) or {}
@@ -90,7 +92,7 @@ def test_common_xacro_exposes_launch_and_base_model_arguments() -> None:
     assert _xacro_arg_names(common_xacro) == LAUNCH_SCOPED_XACRO_ARGS | BASE_MODEL_XACRO_ARGS
 
 
-def test_example_model_xacro_args_match_the_yaml_contract() -> None:
+def test_default_model_xacro_args_match_the_yaml_contract() -> None:
     base_model_xacro_args = _load_model_xacro_args('base')
     sensors1_model_xacro_args = _load_model_xacro_args('sensors1')
 
@@ -101,10 +103,8 @@ def test_example_model_xacro_args_match_the_yaml_contract() -> None:
     assert not LAUNCH_SCOPED_XACRO_ARGS.intersection(sensors1_model_xacro_args)
 
 
-def test_model_utils_module_is_removed() -> None:
-    model_utils_path = PACKAGE_DIR / 'robot_mima_mkv30' / 'model_utils.py'
-
-    assert not model_utils_path.exists()
+def test_model_utils_lists_public_robot_models() -> None:
+    assert get_models() == ['base', 'sensors1']
 
 
 def test_sensors1_model_declares_sensor_model_arguments() -> None:

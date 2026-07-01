@@ -1,5 +1,4 @@
 # Parameters for a basic functional battery:
-# - `name`: The name of the battery.
 # - `voltage`: Initial voltage of the battery in volts.
 # - `capacity`: Total charge that the battery can hold in ampere-hours.
 # - `power_load`: Power load on the battery in watts.
@@ -39,16 +38,15 @@
 #   stopping recharge.
 # - When recharge is enabled, Gazebo always exposes these Gazebo Transportservices.
 #   Both services use `gz::msgs::Boolean`:
-#   `/model/<model_name>/battery/<battery_name>/recharge/start`
-#   `/model/<model_name>/battery/<battery_name>/recharge/stop`
+#   `/model/<model_name>/battery/main_battery/recharge/start`
+#   `/model/<model_name>/battery/main_battery/recharge/stop`
 # - If `recharge_by_topic` is true, the plugin also accepts `gz::msgs::Boolean` messages published on topics with those
 #   exact same names.
 #
 # The battery state is published by Gazebo on:
-# `/model/<model_name>/battery/<battery_name>/state`
+# `/model/<model_name>/battery/main_battery/state`
 battery:
   enabled: true
-  name: main_battery
   voltage: 24.0
   capacity: 20.0
   power_load: 0.0

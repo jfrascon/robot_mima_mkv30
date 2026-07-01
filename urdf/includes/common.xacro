@@ -327,16 +327,10 @@
                       value="${sim_cfg.get('battery', dict())}"/>
 
       <xacro:if value="${battery_sim_cfg.get('enabled', False)}">
-        <xacro:property name="battery_name" value="${battery_sim_cfg.get('name', '')}"/>
-
         <!--
-        Parameters 'name', 'voltage', 'capacity' and 'power_load' are required in the `battery` simulation
+        Parameters 'voltage', 'capacity' and 'power_load' are required in the `battery` simulation
         configuration.
         -->
-
-        <xacro:if value="${battery_name == ''}">
-          ${xacro.fatal("battery: name is required when battery.enabled is true")}
-        </xacro:if>
 
         <xacro:property name="battery_voltage" value="${battery_sim_cfg.get('voltage', '')}"/>
 
@@ -375,7 +369,7 @@
         </xacro:if>
 
         <xacro:plugin_linear_battery
-          name="${battery_name}"
+          name="main_battery"
           voltage="${battery_voltage}"
           capacity="${battery_capacity}"
           power_load="${battery_power_load}"

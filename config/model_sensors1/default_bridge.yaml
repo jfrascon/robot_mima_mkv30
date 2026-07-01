@@ -2,135 +2,154 @@
 # The topics listed here should match the topics configured in the simulation
 # plugins, or the topics derived from those plugin settings.
 
-- topic_name: front_lidar2d/scan
-  ros_type_name: sensor_msgs/msg/LaserScan
-  gz_type_name: gz.msgs.LaserScan
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: back_lidar2d/scan
-  ros_type_name: sensor_msgs/msg/LaserScan
-  gz_type_name: gz.msgs.LaserScan
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: left_lidar2d/scan
-  ros_type_name: sensor_msgs/msg/LaserScan
-  gz_type_name: gz.msgs.LaserScan
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: right_lidar2d/scan
-  ros_type_name: sensor_msgs/msg/LaserScan
-  gz_type_name: gz.msgs.LaserScan
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: front_top_lidar3d/scan/points
-  ros_type_name: sensor_msgs/msg/PointCloud2
-  gz_type_name: gz.msgs.PointCloudPacked
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: front_top_lidar3d/imu/data
-  ros_type_name: sensor_msgs/msg/Imu
-  gz_type_name: gz.msgs.IMU
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: left_top_lidar3d/scan/points
-  ros_type_name: sensor_msgs/msg/PointCloud2
-  gz_type_name: gz.msgs.PointCloudPacked
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: chassis_imu/data
-  ros_type_name: sensor_msgs/msg/Imu
-  gz_type_name: gz.msgs.IMU
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: fork_board_camera/rgbd/image
-  ros_type_name: sensor_msgs/msg/Image
-  gz_type_name: gz.msgs.Image
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: fork_board_camera/rgbd/depth_image
-  ros_type_name: sensor_msgs/msg/Image
-  gz_type_name: gz.msgs.Image
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: fork_board_camera/rgbd/points
-  ros_type_name: sensor_msgs/msg/PointCloud2
-  gz_type_name: gz.msgs.PointCloudPacked
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: fork_board_camera/rgbd/camera_info
-  ros_type_name: sensor_msgs/msg/CameraInfo
-  gz_type_name: gz.msgs.CameraInfo
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: fork_board_camera/left_ir/image
-  ros_type_name: sensor_msgs/msg/Image
-  gz_type_name: gz.msgs.Image
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: fork_board_camera/left_ir/camera_info
-  ros_type_name: sensor_msgs/msg/CameraInfo
-  gz_type_name: gz.msgs.CameraInfo
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: fork_board_camera/right_ir/image
-  ros_type_name: sensor_msgs/msg/Image
-  gz_type_name: gz.msgs.Image
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: fork_board_camera/right_ir/camera_info
-  ros_type_name: sensor_msgs/msg/CameraInfo
-  gz_type_name: gz.msgs.CameraInfo
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: fork_board_camera/imu/data
-  ros_type_name: sensor_msgs/msg/Imu
-  gz_type_name: gz.msgs.IMU
-  direction: GZ_TO_ROS
-  qos_profile: SENSOR_DATA
-  lazy: true
-
-- topic_name: base_pose_ground_truth
+- ros_topic_name: base_pose_ground_truth
+  gz_topic_name: base_pose_ground_truth
   ros_type_name: nav_msgs/msg/Odometry
   gz_type_name: gz.msgs.OdometryWithCovariance
   direction: GZ_TO_ROS
   qos_profile: SENSOR_DATA
   lazy: true
 
-- topic_name: tf_sim_world_fr_robot_root_fr
+- ros_topic_name: tf_sim_world_fr_robot_root_fr
+  gz_topic_name: tf_sim_world_fr_robot_root_fr
   ros_type_name: tf2_msgs/msg/TFMessage
   gz_type_name: gz.msgs.Pose_V
   direction: GZ_TO_ROS
   qos_profile: SENSOR_DATA
   lazy: false
+
+- ros_topic_name: front_lidar2d/scan
+  gz_topic_name: front_lidar2d/scan
+  ros_type_name: sensor_msgs/msg/LaserScan
+  gz_type_name: gz.msgs.LaserScan
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: back_lidar2d/scan
+  gz_topic_name: back_lidar2d/scan
+  ros_type_name: sensor_msgs/msg/LaserScan
+  gz_type_name: gz.msgs.LaserScan
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: left_lidar2d/scan
+  gz_topic_name: left_lidar2d/scan
+  ros_type_name: sensor_msgs/msg/LaserScan
+  gz_type_name: gz.msgs.LaserScan
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: right_lidar2d/scan
+  gz_topic_name: right_lidar2d/scan
+  ros_type_name: sensor_msgs/msg/LaserScan
+  gz_type_name: gz.msgs.LaserScan
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: front_top_lidar3d/scan/points
+  gz_topic_name: front_top_lidar3d/scan/points
+  ros_type_name: sensor_msgs/msg/PointCloud2
+  gz_type_name: gz.msgs.PointCloudPacked
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: front_top_lidar3d/imu/data
+  gz_topic_name: front_top_lidar3d/imu/data
+  ros_type_name: sensor_msgs/msg/Imu
+  gz_type_name: gz.msgs.IMU
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: left_top_lidar3d/scan/points
+  gz_topic_name: left_top_lidar3d/scan/points
+  ros_type_name: sensor_msgs/msg/PointCloud2
+  gz_type_name: gz.msgs.PointCloudPacked
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: chassis_imu/data
+  gz_topic_name: chassis_imu/data
+  ros_type_name: sensor_msgs/msg/Imu
+  gz_type_name: gz.msgs.IMU
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: fork_board_camera/rgbd/image
+  gz_topic_name: fork_board_camera/rgbd/image
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: fork_board_camera/rgbd/depth_image
+  gz_topic_name: fork_board_camera/rgbd/depth_image
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: fork_board_camera/rgbd/points
+  gz_topic_name: fork_board_camera/rgbd/points
+  ros_type_name: sensor_msgs/msg/PointCloud2
+  gz_type_name: gz.msgs.PointCloudPacked
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: fork_board_camera/rgbd/camera_info
+  gz_topic_name: fork_board_camera/rgbd/camera_info
+  ros_type_name: sensor_msgs/msg/CameraInfo
+  gz_type_name: gz.msgs.CameraInfo
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: fork_board_camera/left_ir/image
+  gz_topic_name: fork_board_camera/left_ir/image
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: fork_board_camera/left_ir/camera_info
+  gz_topic_name: fork_board_camera/left_ir/camera_info
+  ros_type_name: sensor_msgs/msg/CameraInfo
+  gz_type_name: gz.msgs.CameraInfo
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: fork_board_camera/right_ir/image
+  gz_topic_name: fork_board_camera/right_ir/image
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: fork_board_camera/right_ir/camera_info
+  gz_topic_name: fork_board_camera/right_ir/camera_info
+  ros_type_name: sensor_msgs/msg/CameraInfo
+  gz_type_name: gz.msgs.CameraInfo
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true
+
+- ros_topic_name: fork_board_camera/imu/data
+  gz_topic_name: fork_board_camera/imu/data
+  ros_type_name: sensor_msgs/msg/Imu
+  gz_type_name: gz.msgs.IMU
+  direction: GZ_TO_ROS
+  qos_profile: SENSOR_DATA
+  lazy: true

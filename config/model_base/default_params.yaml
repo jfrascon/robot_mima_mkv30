@@ -1,22 +1,7 @@
 # Keys used by launch substitution expressions must exist in the launch context.
 # Do not configure `use_sim_time` in this file, launch files handle that argument.
-# model_sensors1.launch.py provides these next context keys for robot parameter substitutions:
-# - robot_namespace
+# robot.launch.py provides this context key for robot parameter substitutions:
 # - robot_prefix
-# - robot_odometry_frame
-# - robot_base_frame
-# - robot_rear_left_wheel_rotation_joint
-# - robot_rear_right_wheel_rotation_joint
-# - robot_front_left_wheel_steering_joint
-# - robot_front_right_wheel_steering_joint
-# - robot_fork_mast_joint
-# - robot_fork_holder_joint
-# - robot_fork_board_joint
-# - robot_wheelbase
-# - robot_front_wheel_track
-# - robot_rear_wheel_track
-# - robot_front_wheels_radius
-# - robot_rear_wheels_radius
 
 /**/robot_state_publisher:
   ros__parameters:
@@ -34,7 +19,7 @@
     # the robot namespace to allow multiple robots in the same simulation.
     # _bridge.launch.py sets override_frame_id to "", because sensor plugins publish the
     # required frame_id.
-    config_file: $(var bridge_file)
+    config_file: $(find-pkg-share robot_mima_mkv30)/config/model_base/default_bridge.yaml
     subscription_heartbeat: 1000
     override_timestamps_with_wall_time: false
 
@@ -55,13 +40,13 @@
 
 /**/joint_state_broadcaster:
   ros__parameters:
-    frame_id: $(var robot_base_frame)
+    frame_id: $(var robot_prefix)base_footprint_link
 
 /**/mima_controller:
   ros__parameters:
     reference_timeout: 2.0
-    base_frame_id: $(var robot_base_frame)
-    odom_frame_id: $(var robot_odometry_frame)
+    base_frame_id: $(var robot_prefix)base_footprint_link
+    odom_frame_id: $(var robot_prefix)odom
     enable_odom_tf: true
     front_steering: true
     use_stamped_vel: true
@@ -70,23 +55,23 @@
     velocity_rolling_window_size: 10
     position_feedback: false
     rear_wheels_names:
-    - $(var robot_rear_right_wheel_rotation_joint)
-    - $(var robot_rear_left_wheel_rotation_joint)
+    - $(var robot_prefix)rear_right_wheel_rotation_joint
+    - $(var robot_prefix)rear_left_wheel_rotation_joint
     front_wheels_names:
-    - $(var robot_front_right_wheel_steering_joint)
-    - $(var robot_front_left_wheel_steering_joint)
-    wheelbase: $(var robot_wheelbase)
-    front_wheel_track: $(var robot_front_wheel_track)
-    rear_wheel_track: $(var robot_rear_wheel_track)
-    front_wheels_radius: $(var robot_front_wheels_radius)
-    rear_wheels_radius: $(var robot_rear_wheels_radius)
+    - $(var robot_prefix)front_right_wheel_steering_joint
+    - $(var robot_prefix)front_left_wheel_steering_joint
+    wheelbase: 1.7
+    front_wheel_track: 0.78
+    rear_wheel_track: 1.1
+    front_wheels_radius: 0.2285
+    rear_wheels_radius: 0.2795
 
 /**/fork_trajectory_controller:
   ros__parameters:
     joints:
-    - $(var robot_fork_mast_joint)
-    - $(var robot_fork_holder_joint)
-    - $(var robot_fork_board_joint)
+    - $(var robot_prefix)fork_mast_joint
+    - $(var robot_prefix)fork_holder_joint
+    - $(var robot_prefix)fork_board_joint
 
     command_interfaces:
     - position
