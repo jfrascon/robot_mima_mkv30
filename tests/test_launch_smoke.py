@@ -5,20 +5,10 @@ from conftest import run_bash
 @pytest.mark.parametrize(
     ('launch_file', 'launch_args', 'expected_text'),
     [
+        ('robot.launch.py', 'robot_model:=base params_file_allow_substs:=True use_sim_time:=True', 'Robot initialized'),
         (
-            'model_base.launch.py',
-            'params_file_allow_substs:=True use_sim_time:=True '
-            'bridge_file:=$(ros2 pkg prefix robot_mima_mkv30)/share/robot_mima_mkv30/config/'
-            'model_base/example_bridge.yaml '
-            'local_odometry_frame:=odom',
-            'Robot initialized',
-        ),
-        (
-            'model_sensors1.launch.py',
-            'robot_name:=mima_mkv30 params_file_allow_substs:=True use_sim_time:=True '
-            'bridge_file:=$(ros2 pkg prefix robot_mima_mkv30)/share/robot_mima_mkv30/config/'
-            'model_sensors1/example_bridge.yaml '
-            'local_odometry_frame:=odom',
+            'robot.launch.py',
+            'robot_model:=sensors1 robot_name:=mima_mkv30 params_file_allow_substs:=True use_sim_time:=True',
             'Creating GZ->ROS Bridge:',
         ),
     ],

@@ -18,8 +18,8 @@ def test_model_base_expands_to_valid_urdf(tmp_path: Path) -> None:
 def test_model_base_sim_expands_to_valid_urdf(tmp_path: Path) -> None:
     urdf_path = tmp_path / 'model_base_sim.urdf'
     xacro_path = PACKAGE_DIR / 'urdf' / 'models' / 'model_base.xacro'
-    controllers = PACKAGE_DIR / 'config' / 'model_base' / 'example_params.yaml'
-    sim_file = PACKAGE_DIR / 'config' / 'model_base' / 'example_simulation.yaml'
+    controllers = PACKAGE_DIR / 'config' / 'model_base' / 'default_params.yaml'
+    sim_file = PACKAGE_DIR / 'config' / 'model_base' / 'default_simulation.yaml'
 
     result = run_bash(
         f'xacro "{xacro_path}" sim_file:="{sim_file}" ros2_control_config_file:="{controllers}" '
@@ -57,14 +57,17 @@ def test_model_base_has_only_expected_wheel_meshes_and_no_sensors(tmp_path: Path
 
 
 def test_launch_show_args_lists_expected_arguments() -> None:
-    result = run_bash('ros2 launch robot_mima_mkv30 model_base.launch.py --show-args')
+    result = run_bash('ros2 launch robot_mima_mkv30 robot.launch.py robot_model:=base --show-args')
     output = result.stdout + result.stderr
 
     assert result.returncode == 0, output
     assert "'use_sim_time'" in output, output
+    assert "'robot_model'" in output, output
     assert "'robot_name'" in output, output
     assert "'params_file'" in output, output
     assert "'model_xacro_args_file'" in output, output
     assert "'params_file_allow_substs'" in output, output
+    assert "'bridge_node_arguments'" in output, output
+    assert "'rsp_node_arguments'" in output, output
     assert "'properties_file'" not in output, output
     assert "'controller_config_file'" not in output, output
