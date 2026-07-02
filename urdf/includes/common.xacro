@@ -389,71 +389,97 @@
       </xacro:if>
 
       <!--
-      Insert the `OdometryPublisher` Gazebo plugin to publish the true pose of
-      the robot with respect to a selected fixed frame in Gazebo.
+      Insert the pose publisher Gazebo plugin to publish the pose of a robot-attached frame with
+      respect to a reference frame.
       More details about this plugin in
-      package://robotics_description/urdf/gz_system_plugins/plugin_odometry_publisher_macro.xacro
+      package://robotics_description/urdf/gz_system_plugins/plugin_referenced_frame_pose_publisher_macro.xacro
       -->
-      <xacro:property name="base_pose_ground_truth_publisher_sim_cfg"
-                      value="${sim_cfg.get('base_pose_ground_truth_publisher', dict())}"/>
+      <xacro:property name="pose_publisher_sim_cfg"
+                      value="${sim_cfg.get('pose_publisher', dict())}"/>
 
-      <xacro:if value="${base_pose_ground_truth_publisher_sim_cfg.get('enabled', False)}">
+      <xacro:if value="${pose_publisher_sim_cfg.get('enabled', False)}">
         <!--
-        Prepend the prefix `bpgtp_` to all properties related to the base pose
-        ground truth publisher Gazebo plugin, to avoid name conflicts with
-        other Gazebo plugins.
+        Prepend the prefix `pose_pub_` to all properties related to the pose
+        publisher Gazebo plugin, to avoid name conflicts with other Gazebo plugins.
         -->
-        <xacro:property name="bpgtp_nav_topic_no_cov"
-                        value="${base_pose_ground_truth_publisher_sim_cfg.get('nav_topic_no_cov', '')}"/>
+        <!--
+        YAML parses keys without a value as `None`; normalize missing or null topics to an empty
+        string so that the checks below can use the same condition for both cases.
+        -->
+        <xacro:property name="pose_pub_topic"
+                        value="${pose_publisher_sim_cfg.get('topic', '') or ''}"/>
 
-        <xacro:property name="bpgtp_nav_topic_cov"
-                        value="${base_pose_ground_truth_publisher_sim_cfg.get('nav_topic_cov', '')}"/>
+        <xacro:property name="pose_pub_topic_with_covariance"
+                        value="${pose_publisher_sim_cfg.get('topic_with_covariance', '') or ''}"/>
 
-        <xacro:property name="bpgtp_tf_topic"
-                        value="${base_pose_ground_truth_publisher_sim_cfg.get('tf_topic', '')}"/>
+        <xacro:property name="pose_pub_tf_topic"
+                        value="${pose_publisher_sim_cfg.get('tf_topic', '') or ''}"/>
 
-        <!-- If one of the topics is empty, then the plugin is not loaded. -->
-        <xacro:if value="${bpgtp_nav_topic_cov != '' and bpgtp_nav_topic_no_cov != '' and bpgtp_tf_topic != ''}">
-          <xacro:resolve_topic prop_id="bpgtp_resolved_nav_topic_cov"
-                               topic="${bpgtp_nav_topic_cov}"
-                               namespace="${robot_namespace}"/>
+        <!-- If all topics are empty, then the plugin is not loaded. -->
+        <xacro:if value="${pose_pub_topic_with_covariance != '' or pose_pub_topic != '' or pose_pub_tf_topic != ''}">
+          <xacro:if value="${pose_pub_topic != ''}">
+            <xacro:resolve_topic prop_id="pose_pub_resolved_topic"
+                                 topic="${pose_pub_topic}"
+                                 namespace="${robot_namespace}"/>
+          </xacro:if>
+          <xacro:if value="${pose_pub_topic == ''}">
+            <xacro:property name="pose_pub_resolved_topic" value=""/>
+          </xacro:if>
 
-          <xacro:resolve_topic prop_id="bpgtp_resolved_nav_topic_no_cov"
-                               topic="${bpgtp_nav_topic_no_cov}"
-                               namespace="${robot_namespace}"/>
+          <xacro:if value="${pose_pub_topic_with_covariance != ''}">
+            <xacro:resolve_topic prop_id="pose_pub_resolved_topic_with_covariance"
+                                 topic="${pose_pub_topic_with_covariance}"
+                                 namespace="${robot_namespace}"/>
+          </xacro:if>
+          <xacro:if value="${pose_pub_topic_with_covariance == ''}">
+            <xacro:property name="pose_pub_resolved_topic_with_covariance" value=""/>
+          </xacro:if>
 
-          <xacro:resolve_topic prop_id="bpgtp_resolved_tf_topic"
-                               topic="${bpgtp_tf_topic}"
-                               namespace="${robot_namespace}"/>
+          <xacro:if value="${pose_pub_tf_topic != ''}">
+            <xacro:resolve_topic prop_id="pose_pub_resolved_tf_topic"
+                                 topic="${pose_pub_tf_topic}"
+                                 namespace="${robot_namespace}"/>
+          </xacro:if>
+          <xacro:if value="${pose_pub_tf_topic == ''}">
+            <xacro:property name="pose_pub_resolved_tf_topic" value=""/>
+          </xacro:if>
 
-          <xacro:property name="bpgtp_fixed_frame"
-                          value="${base_pose_ground_truth_publisher_sim_cfg.get('fixed_frame', 'sim_world')}"/>
+          <!-- Reference frame is required -->
+          <xacro:property name="pose_pub_reference_frame"
+                          value="${pose_publisher_sim_cfg.get('reference_frame', '') or ''}"/>
 
-          <xacro:property name="bpgtp_offset"
-                          value="${base_pose_ground_truth_publisher_sim_cfg.get('offset', dict(x=0, y=0, z=0, R=0, P=0, Y=0))}"/>
+          <xacro:if value="${pose_pub_reference_frame == ''}">
+            ${xacro.fatal(
+              "pose_publisher.reference_frame is required when pose_publisher.enabled is true.")}
+          </xacro:if>
 
-          <xacro:property name="bpgtp_global_offset"
-                          value="${base_pose_ground_truth_publisher_sim_cfg.get('global_offset', dict(x=0, y=0, z=0, R=0, P=0, Y=0))}"/>
+          <xacro:property name="pose_pub_local_offset"
+                          value="${pose_publisher_sim_cfg.get(
+                            'local_offset', dict(x=0, y=0, z=0, R=0, P=0, Y=0))}"/>
 
-          <xacro:property name="bpgtp_gaussian_noise"
-                          value="${base_pose_ground_truth_publisher_sim_cfg.get('gaussian_noise', 0)}"/>
+          <xacro:property name="pose_pub_global_offset"
+                          value="${pose_publisher_sim_cfg.get(
+                            'global_offset', dict(x=0, y=0, z=0, R=0, P=0, Y=0))}"/>
 
-          <xacro:property name="bpgtp_publication_frequency"
-                          value="${base_pose_ground_truth_publisher_sim_cfg.get('publication_frequency', 50)}"/>
+          <xacro:property name="pose_pub_gaussian_noise"
+                          value="${pose_publisher_sim_cfg.get('gaussian_noise', 0)}"/>
 
-          <xacro:plugin_odometry_publisher
-            odom_frame="${bpgtp_fixed_frame}"
-            robot_base_frame="${robot_prefix}base_footprint_link"
-            odom_publish_frequency="${bpgtp_publication_frequency}"
-            odom_topic="${bpgtp_resolved_nav_topic_no_cov}"
-            odom_covariance_topic="${bpgtp_resolved_nav_topic_cov}"
-            tf_topic="${bpgtp_resolved_tf_topic}"
+          <xacro:property name="pose_pub_msg_publication_freq"
+                          value="${pose_publisher_sim_cfg.get('msg_publication_freq', 50)}"/>
+
+          <xacro:plugin_referenced_frame_pose_publisher
+            reference_frame="${pose_pub_reference_frame}"
+            published_robot_frame="${robot_prefix}base_footprint_link"
+            msg_publication_freq="${pose_pub_msg_publication_freq}"
+            topic="${pose_pub_resolved_topic}"
+            topic_with_covariance="${pose_pub_resolved_topic_with_covariance}"
+            tf_topic="${pose_pub_resolved_tf_topic}"
             dimensions="2"
-            xyz_offset="${bpgtp_offset['x']} ${bpgtp_offset['y']} ${bpgtp_offset['z']}"
-            rpy_offset="${bpgtp_offset['R']} ${bpgtp_offset['P']} ${bpgtp_offset['Y']}"
-            xyz_global_offset="${bpgtp_global_offset['x']} ${bpgtp_global_offset['y']} ${bpgtp_global_offset['z']}"
-            rpy_global_offset="${bpgtp_global_offset['R']} ${bpgtp_global_offset['P']} ${bpgtp_global_offset['Y']}"
-            gaussian_noise="${bpgtp_gaussian_noise}"/>
+            xyz_offset="${pose_pub_local_offset['x']} ${pose_pub_local_offset['y']} ${pose_pub_local_offset['z']}"
+            rpy_offset="${pose_pub_local_offset['R']} ${pose_pub_local_offset['P']} ${pose_pub_local_offset['Y']}"
+            xyz_global_offset="${pose_pub_global_offset['x']} ${pose_pub_global_offset['y']} ${pose_pub_global_offset['z']}"
+            rpy_global_offset="${pose_pub_global_offset['R']} ${pose_pub_global_offset['P']} ${pose_pub_global_offset['Y']}"
+            gaussian_noise="${pose_pub_gaussian_noise}"/>
         </xacro:if>
       </xacro:if>
     </gazebo>

@@ -53,19 +53,21 @@ battery:
   fix_issue_225: true
 
 ###################################################################################################
-# Base pose ground truth publisher
+# Pose publisher
 ###################################################################################################
-base_pose_ground_truth_publisher:
+pose_publisher:
   enabled: true
-  fixed_frame: map
-  offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
+  # With zero local_offset, reference_frame set to `map`, and zero global_offset, this publishes
+  # the pose of the robot reference frame (base_footprint_link) with respect to `map`.
+  local_offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
+  reference_frame: map
   # global_offset is only applied by Gazebo Sim 10 or newer.
   # Older Gazebo Sim versions, including Gazebo Sim 8, ignore this field.
   global_offset: {"x": 0.0, "y": 0.0, "z": 0.0, "R": 0.0, "P": 0.0, "Y": 0.0}
   gaussian_noise: 0.0
-  publication_frequency: 50.0
-  nav_topic_no_cov: base_pose_ground_truth_no_cov # published
-  nav_topic_cov: base_pose_ground_truth # published
+  msg_publication_freq: 50.0
+  topic: base_pose_ground_truth_no_cov # published
+  topic_with_covariance: base_pose_ground_truth # published
   tf_topic: tf_sim_world_fr_robot_root_fr # published
 
 ###################################################################################################
