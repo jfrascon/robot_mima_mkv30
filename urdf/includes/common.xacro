@@ -392,7 +392,7 @@
       Insert the pose publisher Gazebo plugin to publish the pose of a robot-attached frame with
       respect to a reference frame.
       More details about this plugin in
-      package://robotics_description/urdf/gz_system_plugins/plugin_pose_in_reference_frame_publisher_macro.xacro
+      package://robotics_description/urdf/gz_system_plugins/plugin_pose_publisher_in_reference_frame_macro.xacro
       -->
       <xacro:property name="pose_publisher_sim_cfg"
                       value="${sim_cfg.get('pose_publisher', dict())}"/>
@@ -467,9 +467,9 @@
           <xacro:property name="pose_pub_msg_publication_freq"
                           value="${pose_publisher_sim_cfg.get('msg_publication_freq', 50)}"/>
 
-          <xacro:plugin_pose_in_reference_frame_publisher
+          <xacro:plugin_pose_publisher_in_reference_frame
             reference_frame="${pose_pub_reference_frame}"
-            published_robot_frame="${robot_prefix}base_footprint_link"
+            robot_frame="${robot_prefix}base_footprint_link"
             msg_publication_freq="${pose_pub_msg_publication_freq}"
             topic="${pose_pub_resolved_topic}"
             topic_with_covariance="${pose_pub_resolved_topic_with_covariance}"

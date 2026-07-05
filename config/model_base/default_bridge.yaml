@@ -2,8 +2,8 @@
 # The topics listed here should match the topics configured in the simulation
 # plugins, or the topics derived from those plugin settings.
 
-- ros_topic_name: base_pose_ground_truth
-  gz_topic_name: base_pose_ground_truth
+- ros_topic_name: sim_pose
+  gz_topic_name: sim_pose
   ros_type_name: nav_msgs/msg/Odometry
   gz_type_name: gz.msgs.OdometryWithCovariance
   direction: GZ_TO_ROS
