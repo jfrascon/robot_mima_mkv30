@@ -156,31 +156,64 @@ def _include_bridge() -> GroupAction:
     passes the rendered parameter file and bridge node options to the internal
     bridge launch file.
     """
+    # With `scoped=True`, `GroupAction` creates an isolated launch context for the included launch
+    # file.
+    # With `forwarding=False`, that isolated context does not automatically inherit launch
+    # configurations from this launch file.
+    # The `launch_configurations` argument below explicitly populates the isolated context with the
+    # keys that the included launch file is allowed to see.
+    # The `launch_arguments` passed to `IncludeLaunchDescription` must then read values from that
+    # isolated context, not from the original context.
+
     launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
         'robot_name': LaunchConfiguration('robot_name'),
         'params_file': LaunchConfiguration('params_file'),
         'params_file_allow_substs': 'False',
         'use_sim_time': LaunchConfiguration('use_sim_time'),
+    }
+
+    # In the original launch context the public keys are `bridge_config_file` and
+    # `bridge_node_arguments`. The included `_bridge.launch.py` does not declare those keys;
+    # it declares `config_file` and `node_arguments`.
+    #
+    # For that reason this helper uses two mappings:
+    #
+    # - `launch_configurations` populates the new isolated context. It reads
+    #   `bridge_config_file` and `bridge_node_arguments` from this launch file and stores those
+    #   values under `config_file` and `node_arguments` in the isolated context.
+    # - `launch_arguments` is passed to `IncludeLaunchDescription`. It must read `config_file` and
+    #   `node_arguments` from the isolated context, because `bridge_config_file` and
+    #   `bridge_node_arguments` are not available there.
+    #
+    # Value flow:
+    # `bridge_config_file` in robot.launch.py -> `config_file` in the isolated context ->
+    # `config_file` argument declared by _bridge.launch.py.
+    # `bridge_node_arguments` in robot.launch.py -> `node_arguments` in the isolated context ->
+    # `node_arguments` argument declared by _bridge.launch.py.
+
+    launch_configurations = {
+        **launch_mappings,
         'config_file': LaunchConfiguration('bridge_config_file'),
         'node_arguments': LaunchConfiguration('bridge_node_arguments'),
     }
 
-    # Create an isolated launch context for the included launch file and seed that context with the
-    # same keys passed to the include. The values in `launch_configurations` are resolved before the
-    # isolated context is entered, so the `LaunchConfiguration` values below can still read from this
-    # launch file. The included launch file then receives only the explicit `launch_arguments`.
+    launch_arguments = {
+        **launch_mappings,
+        'config_file': LaunchConfiguration('config_file'),
+        'node_arguments': LaunchConfiguration('node_arguments'),
+    }
 
     return GroupAction(
         scoped=True,
         forwarding=False,
-        launch_configurations=launch_mappings,
+        launch_configurations=launch_configurations,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_bridge.launch.py'])
                 ),
-                launch_arguments=launch_mappings.items(),
+                launch_arguments=launch_arguments.items(),
             )
         ],
     )
@@ -190,6 +223,15 @@ def _include_rsp() -> GroupAction:
     """
     Include the robot_state_publisher launch file with a new isolated launch context.
     """
+    # With `scoped=True`, `GroupAction` creates an isolated launch context for the included launch
+    # file.
+    # With `forwarding=False`, that isolated context does not automatically inherit launch
+    # configurations from this launch file.
+    # The `launch_configurations` argument below explicitly populates the isolated context with the
+    # keys that the included launch file is allowed to see.
+    # The `launch_arguments` passed to `IncludeLaunchDescription` must then read values from that
+    # isolated context, not from the original context.
+
     launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
         'robot_model': LaunchConfiguration('robot_model'),
@@ -199,24 +241,35 @@ def _include_rsp() -> GroupAction:
         'use_sim_time': LaunchConfiguration('use_sim_time'),
         'model_xacro_args_file': LaunchConfiguration('model_xacro_args_file'),
         'sim_file': LaunchConfiguration('sim_file'),
-        'node_arguments': LaunchConfiguration('rsp_node_arguments'),
     }
 
-    # Create an isolated launch context for the included launch file and seed that context with the
-    # same keys passed to the include. The values in `launch_configurations` are resolved before the
-    # isolated context is entered, so the `LaunchConfiguration` values below can still read from this
-    # launch file. The included launch file then receives only the explicit `launch_arguments`.
+    # In the original launch context the public key is `rsp_node_arguments`.
+    # The included `_rsp.launch.py` does not declare that key; it declares `node_arguments`.
+    #
+    # For that reason this helper uses two mappings:
+    #
+    # - `launch_configurations` populates the new isolated context. It reads `rsp_node_arguments`
+    #   from this launch file and stores that value under `node_arguments` in the isolated context.
+    # - `launch_arguments` is passed to `IncludeLaunchDescription`. It must read `node_arguments`
+    #   from the isolated context, because `rsp_node_arguments` is not available there.
+    #
+    # Value flow:
+    # `rsp_node_arguments` in robot.launch.py -> `node_arguments` in the isolated context ->
+    # `node_arguments` argument declared by _rsp.launch.py.
+
+    launch_configurations = {**launch_mappings, 'node_arguments': LaunchConfiguration('rsp_node_arguments')}
+    launch_arguments = {**launch_mappings, 'node_arguments': LaunchConfiguration('node_arguments')}
 
     return GroupAction(
         scoped=True,
         forwarding=False,
-        launch_configurations=launch_mappings,
+        launch_configurations=launch_configurations,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_rsp.launch.py'])
                 ),
-                launch_arguments=launch_mappings.items(),
+                launch_arguments=launch_arguments.items(),
             )
         ],
     )
@@ -226,6 +279,15 @@ def _include_ros2_control() -> GroupAction:
     """
     Include ros2_control launch file with a new isolated launch context.
     """
+    # With `scoped=True`, `GroupAction` creates an isolated launch context for the included launch
+    # file.
+    # With `forwarding=False`, that isolated context does not automatically inherit launch
+    # configurations from this launch file.
+    # The `launch_configurations` argument below explicitly populates the isolated context with the
+    # keys that the included launch file is allowed to see.
+    # The `launch_arguments` passed to `IncludeLaunchDescription` must then read values from that
+    # isolated context, not from the original context.
+
     launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
         'robot_name': LaunchConfiguration('robot_name'),
@@ -243,10 +305,9 @@ def _include_ros2_control() -> GroupAction:
         'fork_trajectory_controller_remappings': LaunchConfiguration('fork_trajectory_controller_remappings'),
     }
 
-    # Create an isolated launch context for the included launch file and seed that context with the
-    # same keys passed to the include. The values in `launch_configurations` are resolved before the
-    # isolated context is entered, so the `LaunchConfiguration` values below can still read from this
-    # launch file. The included launch file then receives only the explicit `launch_mappings`.
+    # The keys in `launch_mappings` are the same keys declared by `_ros2_control.launch.py`.
+    # The included launch file receives those same keys, so this include does not need separate
+    # `launch_configurations` and `launch_arguments` mappings.
 
     return GroupAction(
         scoped=True,
