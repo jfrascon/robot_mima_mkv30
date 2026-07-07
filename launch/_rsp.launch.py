@@ -52,7 +52,7 @@ def generate_launch_description() -> LaunchDescription:
         ),
         DeclareLaunchArgument(
             'node_arguments',
-            default_value='{"output": "both", "respawn": false}',
+            default_value='{"output": "both", "respawn": false, "ros_arguments": ["--log-level", "info"]}',
             description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
         ),
         rlh.SetRobotNamespace(
@@ -172,13 +172,7 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
             namespace=LaunchConfiguration('robot_namespace'),
             parameters=parameters,
             **rlh.resolve_node_arguments(
-                LaunchConfiguration('node_arguments').perform(ctx),
-                default_arguments={
-                    'name': 'robot_state_publisher',
-                    'output': 'screen',
-                    'emulate_tty': True,
-                    'respawn': False,
-                },
+                LaunchConfiguration('node_arguments').perform(ctx), extra_rejected_arguments={'namespace'}
             ),
         )
     ]

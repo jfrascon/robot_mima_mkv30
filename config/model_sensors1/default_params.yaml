@@ -8,7 +8,7 @@
     publish_frequency: 20.0
     ignore_timestamp: false # If true, joint_state messages are accepted regardless of timestamp.
 
-/**/bridge:
+/**/ros_gz_bridge:
   ros__parameters:
     # Do not set `expand_gz_topic_names` in this file, if set, it is overridden.
     # Do not set `override_frame_id` in this file, if set, it is overridden.

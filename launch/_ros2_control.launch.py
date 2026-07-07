@@ -55,7 +55,7 @@ def generate_launch_description() -> LaunchDescription:
             ),
             DeclareLaunchArgument(
                 'controller_manager_node_arguments',
-                default_value='{"output": "both", "respawn": false}',
+                default_value='{"output": "both", "respawn": false, "ros_arguments": ["--log-level", "info"]}',
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
@@ -131,7 +131,7 @@ def _launch_ros2_control(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
                 # Add extra arguments like `--log-level debug`, `respawn`, ...
                 **rlh.resolve_node_arguments(
                     LaunchConfiguration('controller_manager_node_arguments').perform(ctx),
-                    default_arguments={'output': 'screen', 'respawn': False, 'ros_arguments': ['--log-level', 'info']},
+                    extra_rejected_arguments={'namespace'},
                 ),
             )
         )
