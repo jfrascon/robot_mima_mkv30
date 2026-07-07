@@ -58,14 +58,22 @@ def generate_launch_description() -> LaunchDescription:
             ),
             # Required.
             DeclareLaunchArgument('sim_file', description='Path to the simulation YAML file.'),
+            # Required.
+            DeclareLaunchArgument('bridge_config_file', description='Path with the configuration for the bridge'),
             DeclareLaunchArgument(
-                'rsp_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC
+                'rsp_node_arguments',
+                default_value='{"output": "both", "respawn": false}',
+                description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
-                'bridge_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC
+                'bridge_node_arguments',
+                default_value='{"output": "both", "respawn": false}',
+                description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
-                'controller_manager_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC
+                'controller_manager_node_arguments',
+                default_value='{"output": "both", "respawn": false}',
+                description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
                 'joint_state_broadcaster_spawner_options',

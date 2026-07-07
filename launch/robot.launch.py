@@ -84,27 +84,35 @@ def generate_launch_description() -> LaunchDescription:
             ),
             description='Path with the configuration for the bridge',
         ),
-        DeclareLaunchArgument('rsp_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC),
         DeclareLaunchArgument(
-            'bridge_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC
+            'rsp_node_arguments',
+            default_value='{"output": "both", "respawn": false}',
+            description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
         ),
         DeclareLaunchArgument(
-            'controller_manager_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC
+            'bridge_node_arguments',
+            default_value='{"output": "both", "respawn": false}',
+            description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
+        ),
+        DeclareLaunchArgument(
+            'controller_manager_node_arguments',
+            default_value='{"output": "both", "respawn": false}',
+            description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
         ),
         DeclareLaunchArgument(
             'joint_state_broadcaster_spawner_options',
             default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
-            description='Allowed spawner CLI options for the joint_state_broadcaster controller',
+            description='Options for the joint_state_broadcaster controller spawner',
         ),
         DeclareLaunchArgument(
             'mima_controller_spawner_options',
             default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
-            description='Allowed spawner CLI options for the mima_controller controller',
+            description='Options for the mima_controller controller spawner',
         ),
         DeclareLaunchArgument(
             'fork_trajectory_controller_spawner_options',
             default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
-            description='Allowed spawner CLI options for the fork_trajectory_controller controller',
+            description='Options for the fork_trajectory_controller controller spawner',
         ),
         DeclareLaunchArgument(
             'joint_state_broadcaster_controller_remappings',
