@@ -2,6 +2,19 @@ from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
 
+DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS = '[["joint_states","joint_states"]]'
+
+DEFAULT_MIMA_CONTROLLER_REMAPPINGS = (
+    '[["~/reference","cmd_vel"],["~/odometry","odom"],["~/tf_odometry","/tf"],'
+    '["~/controller_state","steering_controller_status"]]'
+)
+
+DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS = (
+    '[["~/joint_trajectory","fork_trajectory"],'
+    '["~/follow_joint_trajectory","fork_follow_joint_trajectory"],'
+    '["~/controller_state","fork_trajectory_state"]]'
+)
+
 
 def get_models() -> list[str]:
     """

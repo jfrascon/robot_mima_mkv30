@@ -9,6 +9,11 @@ from launch.substitutions import LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
 from launch_ros.actions import Node
 from launch_ros.descriptions import ParameterFile
+from robot_mima_mkv30.model_utils import (
+    DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS,
+    DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS,
+    DEFAULT_MIMA_CONTROLLER_REMAPPINGS,
+)
 
 # Default remappings in the launch arguments `joint_state_broadcaster_controller_remappings`,
 # `mima_controller_remappings`, and `fork_trajectory_controller_remappings` are always applied.
@@ -18,19 +23,6 @@ from launch_ros.descriptions import ParameterFile
 # are merged with the defaults, so even if the user just inserts one remapping, the rest of the
 # defaults are kept. If the user re-defines all the remappings for a controller, then the defaults
 # are replaced by the user-provided remappings.
-
-DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS = '[["joint_states","joint_states"]]'
-
-DEFAULT_MIMA_CONTROLLER_REMAPPINGS = (
-    '[["~/reference","cmd_vel"],["~/odometry","odom"],["~/tf_odometry","/tf"],'
-    '["~/controller_state","steering_controller_status"]]'
-)
-
-DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS = (
-    '[["~/joint_trajectory","fork_trajectory"],'
-    '["~/follow_joint_trajectory","fork_follow_joint_trajectory"],'
-    '["~/controller_state","fork_trajectory_state"]]'
-)
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -62,22 +54,24 @@ def generate_launch_description() -> LaunchDescription:
                 'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
             ),
             DeclareLaunchArgument(
-                'controller_manager_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC
+                'controller_manager_node_arguments',
+                default_value='{"output": "both", "respawn": false}',
+                description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
                 'joint_state_broadcaster_spawner_options',
                 default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
-                description='Allowed spawner CLI options for joint_state_broadcaster',
+                description='Options for the joint_state_broadcaster spawner',
             ),
             DeclareLaunchArgument(
                 'mima_controller_spawner_options',
                 default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
-                description='Allowed spawner CLI options for mima_controller',
+                description='Options for the mima_controller spawner',
             ),
             DeclareLaunchArgument(
                 'fork_trajectory_controller_spawner_options',
                 default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
-                description='Allowed spawner CLI options for fork_trajectory_controller',
+                description='Options for the fork_trajectory_controller spawner',
             ),
             DeclareLaunchArgument(
                 'joint_state_broadcaster_controller_remappings',
@@ -99,6 +93,7 @@ def generate_launch_description() -> LaunchDescription:
                 robot_name=LaunchConfiguration('robot_name'),
                 robot_namespace_key='robot_namespace',
             ),
+            rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), robot_prefix_key='robot_prefix'),
             OpaqueFunction(function=_launch_ros2_control),
         ]
     )

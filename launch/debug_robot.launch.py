@@ -13,8 +13,12 @@ from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-
-from robot_mima_mkv30.model_utils import get_models
+from robot_mima_mkv30.model_utils import (
+    DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS,
+    DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS,
+    DEFAULT_MIMA_CONTROLLER_REMAPPINGS,
+    get_models,
+)
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -80,25 +84,18 @@ def generate_launch_description() -> LaunchDescription:
             ),
             DeclareLaunchArgument(
                 'joint_state_broadcaster_controller_remappings',
-                default_value='[["joint_states","joint_states"]]',
-                description='Remapping overrides for the joint_state_broadcaster controller',
+                default_value=DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS,
+                description='Remapping overrides for joint_state_broadcaster',
             ),
             DeclareLaunchArgument(
                 'mima_controller_remappings',
-                default_value=(
-                    '[["~/reference","cmd_vel"],["~/odometry","odom"],["~/tf_odometry","/tf"],'
-                    '["~/controller_state","steering_controller_status"]]'
-                ),
-                description='Remapping overrides for the mima_controller controller',
+                default_value=DEFAULT_MIMA_CONTROLLER_REMAPPINGS,
+                description='Remapping overrides for mima_controller',
             ),
             DeclareLaunchArgument(
                 'fork_trajectory_controller_remappings',
-                default_value=(
-                    '[["~/joint_trajectory","fork_trajectory"],'
-                    '["~/follow_joint_trajectory","fork_follow_joint_trajectory"],'
-                    '["~/controller_state","fork_trajectory_state"]]'
-                ),
-                description='Remapping overrides for the fork_trajectory_controller controller',
+                default_value=DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS,
+                description='Remapping overrides for fork_trajectory_controller',
             ),
             DeclareLaunchArgument(
                 'use_rviz',
