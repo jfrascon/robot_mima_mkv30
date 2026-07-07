@@ -37,13 +37,16 @@ def generate_launch_description() -> LaunchDescription:
         ),
         DeclareLaunchArgument('config_file', description='Path with the configuration for the bridge'),
         DeclareLaunchArgument(
-            'bridge_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC
+            'node_arguments',
+            default_value='{"output": "both", "respawn": false}',
+            description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
         ),
         rlh.SetRobotNamespace(
             namespace=LaunchConfiguration('namespace'),
             robot_name=LaunchConfiguration('robot_name'),
             robot_namespace_key='robot_namespace',
         ),
+        rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), robot_prefix_key='robot_prefix'),
         OpaqueFunction(function=_launch_node, condition=IfCondition(LaunchConfiguration('use_sim_time'))),
     ]
 
@@ -98,7 +101,7 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
             namespace=LaunchConfiguration('robot_namespace'),
             parameters=parameters,
             **rlh.resolve_node_arguments(
-                LaunchConfiguration('bridge_node_arguments').perform(ctx),
+                LaunchConfiguration('node_arguments').perform(ctx),
                 default_arguments={'name': 'bridge', 'output': 'screen', 'emulate_tty': True, 'respawn': False},
             ),
         )

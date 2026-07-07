@@ -10,7 +10,6 @@ from launch.substitutions import Command, FindExecutable, LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
 from launch_ros.actions import Node
 from launch_ros.descriptions import ParameterFile, ParameterValue
-
 from robot_mima_mkv30.model_utils import get_models
 
 
@@ -51,7 +50,11 @@ def generate_launch_description() -> LaunchDescription:
             default_value='',
             description='Path to the simulation YAML. It is used only when use_sim_time is true.',
         ),
-        DeclareLaunchArgument('rsp_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC),
+        DeclareLaunchArgument(
+            'node_arguments',
+            default_value='{"output": "both", "respawn": false}',
+            description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
+        ),
         rlh.SetRobotNamespace(
             namespace=LaunchConfiguration('namespace'),
             robot_name=LaunchConfiguration('robot_name'),
@@ -169,7 +172,7 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
             namespace=LaunchConfiguration('robot_namespace'),
             parameters=parameters,
             **rlh.resolve_node_arguments(
-                LaunchConfiguration('rsp_node_arguments').perform(ctx),
+                LaunchConfiguration('node_arguments').perform(ctx),
                 default_arguments={
                     'name': 'robot_state_publisher',
                     'output': 'screen',
