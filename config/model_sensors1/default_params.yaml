@@ -1,30 +1,20 @@
-# Keys used by launch substitution expressions must exist in the launch context.
-# Do not configure `use_sim_time` in this file, launch files handle that argument.
-# robot.launch.py provides this context key for robot parameter substitutions:
-# - robot_prefix
+# Do not configure `use_sim_time` in this file, it set, it is overridden.
+# The key `robot_prefix` can be used in this file.
 
 /**/robot_state_publisher:
   ros__parameters:
-    # _rsp.launch.py renders `robot_description`.
-    # _rsp.launch.py sets use_robot_description_topic to true, because robot_description is
-    # published as a topic always.
-    # _rsp.launch.py sets frame_prefix to "", because frame prefixes are already inserted into the
-    # xacro model names.
+    # Do not set `use_robot_description_topic` in this file, if set, it is overridden.
+    # Do not set `frame_prefix` in this file, if set, it is overridden.
     publish_frequency: 20.0
     ignore_timestamp: false # If true, joint_state messages are accepted regardless of timestamp.
 
 /**/bridge:
   ros__parameters:
-    # _bridge.launch.py sets expand_gz_topic_names to true, because Gazebo topics always use
-    # the robot namespace to allow multiple robots in the same simulation.
-    # _bridge.launch.py sets override_frame_id to "", because sensor plugins publish the
-    # required frame_id.
-    config_file: $(find-pkg-share robot_mima_mkv30)/config/model_sensors1/default_bridge.yaml
+    # Do not set `expand_gz_topic_names` in this file, if set, it is overridden.
+    # Do not set `override_frame_id` in this file, if set, it is overridden.
     subscription_heartbeat: 1000
     override_timestamps_with_wall_time: false
 
-# Controller parameters are part of this robot parameters file. The model launch
-# renders this file before passing it to ros2_control and Gazebo.
 /**/controller_manager:
   ros__parameters:
     update_rate: 50

@@ -35,6 +35,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument(
             'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
         ),
+        DeclareLaunchArgument('config_file', description='Path with the configuration for the bridge'),
         DeclareLaunchArgument(
             'bridge_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC
         ),
@@ -73,7 +74,12 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
         # robot namespace so multiple robots can run in the same simulation.
         # `override_frame_id` is set to an empty string because Gazebo plugins publish the required
         # frame_id.
-        {'use_sim_time': True, 'expand_gz_topic_names': True, 'override_frame_id': ''},
+        {
+            'use_sim_time': True,
+            'config_file': LaunchConfiguration('config_file'),
+            'expand_gz_topic_names': True,
+            'override_frame_id': '',
+        },
         # The bridges for the battery are not configured in the reusable bridge YAML file because
         # the battery plugin does not allow setting the topic name.
         create_battery_bridges(

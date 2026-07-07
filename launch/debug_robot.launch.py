@@ -1,27 +1,18 @@
-import sys
-from pathlib import Path
-
 import ros2_launch_helpers as rlh
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchContext, LaunchDescription, LaunchDescriptionEntity
 from launch.actions import (
     DeclareLaunchArgument,
-    ExecuteProcess,
     GroupAction,
     IncludeLaunchDescription,
-    LogInfo,
     OpaqueFunction,
-    RegisterEventHandler,
     SetLaunchConfiguration,
 )
 from launch.conditions import IfCondition
-from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from ros_gz_sim.actions import GzServer
 
 from robot_mima_mkv30.model_utils import get_models
 
@@ -31,8 +22,8 @@ def generate_launch_description() -> LaunchDescription:
     Build the simulation debug launch description for one MiMA MKV30 robot model.
 
     This launch file is a package-local debug tool. It starts a simple Gazebo world, includes the
-    normal robot launch file, waits until `robot_description` exists, spawns the robot in Gazebo,
-    and optionally starts RViz and the Gazebo GUI.
+    normal robot launch file, spawns the robot in Gazebo, and optionally starts RViz and the Gazebo
+    GUI.
     """
     return LaunchDescription(
         [
@@ -121,11 +112,9 @@ def generate_launch_description() -> LaunchDescription:
                 choices=['True', 'true', 'False', 'false'],
                 description='Launch Gazebo Sim GUI client. If false, Gazebo Sim runs in headless mode.',
             ),
-            _launch_gazebo_server(),
-            _launch_clock_bridge(),
+            _spawn_world(),
             _include_robot(),
-            OpaqueFunction(function=_spawn_robot),
-            _launch_gazebo_gui(),
+            OpaqueFunction(function=_spawn_model),
             _launch_rviz(),
         ]
     )
@@ -139,7 +128,7 @@ def _include_robot() -> GroupAction:
     The normal defaults from `robot.launch.py` are used for RSP, bridge, ros2_control, spawners,
     and controller remappings.
     """
-    launch_arguments: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
+    launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
         'robot_model': LaunchConfiguration('robot_model'),
         'robot_name': LaunchConfiguration('robot_name'),
@@ -153,50 +142,15 @@ def _include_robot() -> GroupAction:
     return GroupAction(
         scoped=True,
         forwarding=False,
-        launch_configurations=launch_arguments,
+        launch_configurations=launch_mappings,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', 'robot.launch.py'])
                 ),
-                launch_arguments=launch_arguments.items(),
+                launch_arguments=launch_mappings.items(),
             )
         ],
-    )
-
-
-def _launch_clock_bridge() -> Node:
-    """
-    Bridge Gazebo clock to ROS `/clock`.
-
-    This launch file always runs the robot with `use_sim_time=True`. ROS nodes that use simulated
-    time need `/clock`, so the debug world provides this bridge directly.
-    """
-    return Node(
-        package='ros_gz_bridge',
-        executable='parameter_bridge',
-        name='debug_world_clock_bridge',
-        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
-        output='screen',
-    )
-
-
-def _launch_gazebo_gui() -> ExecuteProcess:
-    """Launch the Gazebo GUI client only when `use_gz_gui` is true."""
-    return ExecuteProcess(
-        cmd=['gz', 'sim', '-g'], output='screen', condition=IfCondition(LaunchConfiguration('use_gz_gui'))
-    )
-
-
-def _launch_gazebo_server() -> GzServer:
-    """Launch the Gazebo server with the package-local debug world."""
-    return GzServer(
-        world_sdf_file=PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'worlds', 'debug_world.sdf']),
-        world_sdf_string='',
-        container_name='',
-        create_own_container=False,
-        use_composition=False,
-        initial_sim_time=0.0,
     )
 
 
@@ -208,76 +162,80 @@ def _launch_rviz() -> Node:
         namespace=LaunchConfiguration('namespace'),
         arguments=['-d', PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'rviz', 'sim_debug.rviz'])],
         output='screen',
+        emulate_tty=True,
         condition=IfCondition(LaunchConfiguration('use_rviz')),
     )
 
 
-def _spawn_robot(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
-    """
-    Wait for `robot_description` and then insert the robot into the debug Gazebo world.
-
-    The robot launch starts robot_state_publisher. This function waits until the description topic
-    is visible in the ROS graph before running `ros_gz_sim create`, because Gazebo reads the model
-    XML from that topic.
-    """
-    robot_name = LaunchConfiguration('robot_name').perform(ctx)
+def _spawn_model(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
+    """Insert the robot model into the debug Gazebo world."""
     namespace = LaunchConfiguration('namespace').perform(ctx)
+    robot_name = LaunchConfiguration('robot_name').perform(ctx)
     robot_namespace = rlh.compute_robot_namespace(namespace, robot_name)
-    # Safety measure: Always ensure the robot description topic is fully qualified, i.e., starts with a leading slash.
-    robot_description_topic = f'/{rlh.resolve_name(robot_namespace, "robot_description").lstrip("/")}'
-    wait_script = Path(get_package_share_directory('robot_mima_mkv30')).joinpath('scripts', 'wait_for_ros_topic.py')
-
-    if not wait_script.is_file():
-        raise FileNotFoundError(f"Required wait script '{wait_script}' does not exist.")
-
-    wait_for_robot_description = ExecuteProcess(
-        cmd=[sys.executable, str(wait_script), robot_description_topic, '--timeout', '60.0'], output='screen'
-    )
-
-    spawn_robot = Node(
-        package='ros_gz_sim',
-        executable='create',
-        arguments=[
-            '-world',
-            LaunchConfiguration('world_name'),
-            '-topic',
-            robot_description_topic,
-            '-name',
-            robot_name,
-            '-allow_renaming',
-            'false',
-            '-x',
-            '0.0',
-            '-y',
-            '0.0',
-            '-z',
-            '0.0',
-            '-R',
-            '0.0',
-            '-P',
-            '0.0',
-            '-Y',
-            '0.0',
-        ],
-        output='screen',
-    )
+    # Ensure the robot_description topic is fully qualified.
+    robot_description_topic = rlh.resolve_name('/', rlh.resolve_name(robot_namespace, 'robot_description'))
+    launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
+        'world_name': LaunchConfiguration('world_name'),
+        'topic': robot_description_topic,
+        'entity_name': robot_name,
+        'allow_renaming': 'False',
+        'x': '0.0',
+        'y': '0.0',
+        'z': '0.0',
+        'R': '0.0',
+        'P': '0.0',
+        'Y': '0.0',
+        'node_output': 'screen',
+    }
 
     return [
-        LogInfo(msg=f"Waiting for '{robot_description_topic}' before spawning '{robot_name}'"),
-        wait_for_robot_description,
-        RegisterEventHandler(
-            OnProcessExit(
-                target_action=wait_for_robot_description,
-                on_exit=[
-                    LogInfo(
-                        msg=[
-                            f"Spawning robot '{robot_name}' into Gazebo world '",
-                            LaunchConfiguration('world_name'),
-                            "'",
-                        ]
+        GroupAction(
+            scoped=True,
+            forwarding=False,
+            launch_configurations=launch_mappings,
+            actions=[
+                IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource(
+                        PathJoinSubstitution([FindPackageShare('ros_gz_tools'), 'launch', 'spawn_model.launch.py'])
                     ),
-                    spawn_robot,
-                ],
-            )
-        ),
+                    launch_arguments=launch_mappings.items(),
+                )
+            ],
+        )
     ]
+
+
+def _spawn_world() -> LaunchDescriptionEntity:
+    """Start the debug Gazebo world through ros_gz_tools."""
+    launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
+        'namespace': LaunchConfiguration('namespace'),
+        'use_composition': 'False',
+        'world_sdf_file': PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'worlds', 'debug_world.sdf']),
+        'initial_sim_time': '0.0',
+        'verbosity_level': '4',
+        'use_gz_gui': LaunchConfiguration('use_gz_gui'),
+        'gz_gui_config_file': '',
+        'world_bridge_file': PathJoinSubstitution(
+            [FindPackageShare('robot_mima_mkv30'), 'worlds', 'debug_world_bridge.yaml']
+        ),
+        'bridge_subscription_heartbeat': '1000',
+        'bridge_expand_gz_topic_names': 'True',
+        'bridge_override_timestamps_with_wall_time': 'False',
+        'bridge_override_frame_id': '',
+        'bridge_use_respawn': 'False',
+        'bridge_log_level': 'info',
+    }
+
+    return GroupAction(
+        scoped=True,
+        forwarding=False,
+        launch_configurations=launch_mappings,
+        actions=[
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(
+                    PathJoinSubstitution([FindPackageShare('ros_gz_tools'), 'launch', 'spawn_world.launch.py'])
+                ),
+                launch_arguments=launch_mappings.items(),
+            )
+        ],
+    )

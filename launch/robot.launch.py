@@ -68,6 +68,18 @@ def generate_launch_description() -> LaunchDescription:
             ),
             description='Path to the simulation YAML file.',
         ),
+        DeclareLaunchArgument(
+            'bridge_config_file',
+            default_value=PathJoinSubstitution(
+                [
+                    FindPackageShare('robot_mima_mkv30'),
+                    'config',
+                    ['model_', LaunchConfiguration('robot_model')],
+                    'default_bridge.yaml',
+                ]
+            ),
+            description='Path with the configuration for the bridge',
+        ),
         DeclareLaunchArgument('rsp_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC),
         DeclareLaunchArgument(
             'bridge_node_arguments', default_value='{}', description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC
@@ -118,7 +130,6 @@ def generate_launch_description() -> LaunchDescription:
             robot_namespace_key='robot_namespace',
         ),
         rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), robot_prefix_key='robot_prefix'),
-        # Prepare params_file for consumers that need a concrete YAML path.
         rlh.ProcessParamsFile(
             params_file=LaunchConfiguration('params_file'),
             allow_substs=LaunchConfiguration('params_file_allow_substs'),
@@ -134,7 +145,7 @@ def generate_launch_description() -> LaunchDescription:
 
 def _include_bridge() -> GroupAction:
     """
-    Include the Gazebo bridge launch file for the selected model in an isolated launch scope.
+    Include the bridge launch file with a new isolated launch context.
 
     The public model launch file prepares `params_file` first. This helper then
     passes the rendered parameter file and bridge node options to the internal
@@ -146,15 +157,14 @@ def _include_bridge() -> GroupAction:
         'params_file': LaunchConfiguration('params_file'),
         'params_file_allow_substs': 'False',
         'use_sim_time': LaunchConfiguration('use_sim_time'),
+        'config_file': LaunchConfiguration('bridge_config_file'),
         'bridge_node_arguments': LaunchConfiguration('bridge_node_arguments'),
     }
 
-    # Run the included launch file in its own launch context.
-    # `scoped=True` means that any launch configuration created inside this group stays inside
-    # this group and does not leak back to the rest of the launch file.
-    # `forwarding=False` means that the included launch file does not automatically receive every
-    # launch configuration from this file. It receives only the keys listed in `launch_arguments`.
-    # `_bridge.launch.py` receives only the launch configurations listed in `launch_arguments`.
+    # Create an isolated launch context for the included launch file and seed that context with the
+    # same keys passed to the include. The values in `launch_configurations` are resolved before the
+    # isolated context is entered, so the `LaunchConfiguration` values below can still read from this
+    # launch file. The included launch file then receives only the explicit `launch_arguments`.
 
     return GroupAction(
         scoped=True,
@@ -173,10 +183,7 @@ def _include_bridge() -> GroupAction:
 
 def _include_rsp() -> GroupAction:
     """
-    Include robot_state_publisher for the selected model in an isolated launch scope.
-
-    The internal RSP launch file expands the selected xacro model and publishes
-    the generated `robot_description`.
+    Include the robot_state_publisher launch file with a new isolated launch context.
     """
     launch_arguments: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
@@ -190,12 +197,10 @@ def _include_rsp() -> GroupAction:
         'rsp_node_arguments': LaunchConfiguration('rsp_node_arguments'),
     }
 
-    # Run the included launch file in its own launch context.
-    # `scoped=True` means that any launch configuration created inside this group stays inside
-    # this group and does not leak back to the rest of the launch file.
-    # `forwarding=False` means that the included launch file does not automatically receive every
-    # launch configuration from this file. It receives only the keys listed in `launch_arguments`.
-    # `_rsp.launch.py` receives only the launch configurations listed in `launch_arguments`.
+    # Create an isolated launch context for the included launch file and seed that context with the
+    # same keys passed to the include. The values in `launch_configurations` are resolved before the
+    # isolated context is entered, so the `LaunchConfiguration` values below can still read from this
+    # launch file. The included launch file then receives only the explicit `launch_arguments`.
 
     return GroupAction(
         scoped=True,
@@ -214,14 +219,8 @@ def _include_rsp() -> GroupAction:
 
 def _include_ros2_control() -> GroupAction:
     """
-    Include ros2_control preparation for simulated and non-simulated execution.
-
-    The internal ros2_control launch file decides whether Gazebo provides the
-    controller manager or whether a local `ros2_control_node` must be started.
+    Include ros2_control launch file with a new isolated launch context.
     """
-    # This launch file intentionally includes ros2_control for simulated and non-simulated runs.
-    # When use_sim_time is false, the launch currently fails because the model does not yet emit a
-    # non-simulated ros2_control URDF block with a real hardware plugin.
     launch_arguments: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
         'robot_name': LaunchConfiguration('robot_name'),
@@ -239,13 +238,10 @@ def _include_ros2_control() -> GroupAction:
         'fork_trajectory_controller_remappings': LaunchConfiguration('fork_trajectory_controller_remappings'),
     }
 
-    # Run the included launch file in its own launch context.
-    # `scoped=True` means that any launch configuration created inside this group stays inside
-    # this group and does not leak back to the rest of the launch file.
-    # `forwarding=False` means that the included launch file does not automatically receive every
-    # launch configuration from this file. It receives only the keys listed in `launch_arguments`.
-    # `_ros2_control.launch.py` receives only the launch configurations listed in
-    # `launch_arguments`.
+    # Create an isolated launch context for the included launch file and seed that context with the
+    # same keys passed to the include. The values in `launch_configurations` are resolved before the
+    # isolated context is entered, so the `LaunchConfiguration` values below can still read from this
+    # launch file. The included launch file then receives only the explicit `launch_arguments`.
 
     return GroupAction(
         scoped=True,

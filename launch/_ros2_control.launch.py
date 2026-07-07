@@ -13,7 +13,12 @@ from launch_ros.descriptions import ParameterFile
 # Default remappings in the launch arguments `joint_state_broadcaster_controller_remappings`,
 # `mima_controller_remappings`, and `fork_trajectory_controller_remappings` are always applied.
 # The user can override any remapping individually.
-# If a default remapping is left unchanged, it will be used by the proper controller.
+# If the user wants to change a remmaping, for any controller, they do not need to insert all
+# of them, they can just insert the one they want to change. The remapping(s) inserted by the user
+# are merged with the defaults, so even if the user just inserts one remapping, the rest of the
+# defaults are kept. If the user re-defines all the remappings for a controller, then the defaults
+# are replaced by the user-provided remappings.
+
 DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS = '[["joint_states","joint_states"]]'
 
 DEFAULT_MIMA_CONTROLLER_REMAPPINGS = (
