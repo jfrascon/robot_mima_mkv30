@@ -156,14 +156,14 @@ def _include_bridge() -> GroupAction:
     passes the rendered parameter file and bridge node options to the internal
     bridge launch file.
     """
-    launch_arguments: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
+    launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
         'robot_name': LaunchConfiguration('robot_name'),
         'params_file': LaunchConfiguration('params_file'),
         'params_file_allow_substs': 'False',
         'use_sim_time': LaunchConfiguration('use_sim_time'),
         'config_file': LaunchConfiguration('bridge_config_file'),
-        'bridge_node_arguments': LaunchConfiguration('bridge_node_arguments'),
+        'node_arguments': LaunchConfiguration('bridge_node_arguments'),
     }
 
     # Create an isolated launch context for the included launch file and seed that context with the
@@ -174,13 +174,13 @@ def _include_bridge() -> GroupAction:
     return GroupAction(
         scoped=True,
         forwarding=False,
-        launch_configurations=launch_arguments,
+        launch_configurations=launch_mappings,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_bridge.launch.py'])
                 ),
-                launch_arguments=launch_arguments.items(),
+                launch_arguments=launch_mappings.items(),
             )
         ],
     )
@@ -190,7 +190,7 @@ def _include_rsp() -> GroupAction:
     """
     Include the robot_state_publisher launch file with a new isolated launch context.
     """
-    launch_arguments: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
+    launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
         'robot_model': LaunchConfiguration('robot_model'),
         'robot_name': LaunchConfiguration('robot_name'),
@@ -199,7 +199,7 @@ def _include_rsp() -> GroupAction:
         'use_sim_time': LaunchConfiguration('use_sim_time'),
         'model_xacro_args_file': LaunchConfiguration('model_xacro_args_file'),
         'sim_file': LaunchConfiguration('sim_file'),
-        'rsp_node_arguments': LaunchConfiguration('rsp_node_arguments'),
+        'node_arguments': LaunchConfiguration('rsp_node_arguments'),
     }
 
     # Create an isolated launch context for the included launch file and seed that context with the
@@ -210,13 +210,13 @@ def _include_rsp() -> GroupAction:
     return GroupAction(
         scoped=True,
         forwarding=False,
-        launch_configurations=launch_arguments,
+        launch_configurations=launch_mappings,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_rsp.launch.py'])
                 ),
-                launch_arguments=launch_arguments.items(),
+                launch_arguments=launch_mappings.items(),
             )
         ],
     )
@@ -226,7 +226,7 @@ def _include_ros2_control() -> GroupAction:
     """
     Include ros2_control launch file with a new isolated launch context.
     """
-    launch_arguments: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
+    launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
         'robot_name': LaunchConfiguration('robot_name'),
         'params_file': LaunchConfiguration('params_file'),
@@ -246,18 +246,18 @@ def _include_ros2_control() -> GroupAction:
     # Create an isolated launch context for the included launch file and seed that context with the
     # same keys passed to the include. The values in `launch_configurations` are resolved before the
     # isolated context is entered, so the `LaunchConfiguration` values below can still read from this
-    # launch file. The included launch file then receives only the explicit `launch_arguments`.
+    # launch file. The included launch file then receives only the explicit `launch_mappings`.
 
     return GroupAction(
         scoped=True,
         forwarding=False,
-        launch_configurations=launch_arguments,
+        launch_configurations=launch_mappings,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_ros2_control.launch.py'])
                 ),
-                launch_arguments=launch_arguments.items(),
+                launch_arguments=launch_mappings.items(),
             )
         ],
     )
