@@ -237,6 +237,7 @@ def _spawn_world() -> LaunchDescriptionEntity:
         'world_bridge_file': PathJoinSubstitution(
             [FindPackageShare('robot_mima_mkv30'), 'worlds', 'debug_world_bridge.yaml']
         ),
+        'bridge_name': 'world_ros_gz_bridge',
         'bridge_subscription_heartbeat': '1000',
         'bridge_expand_gz_topic_names': 'True',
         'bridge_override_timestamps_with_wall_time': 'False',
