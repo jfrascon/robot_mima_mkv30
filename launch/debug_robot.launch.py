@@ -129,9 +129,11 @@ def _include_robot() -> GroupAction:
     """
     Include the public robot launch with the fixed debug namespace and simulation clock.
 
-    This debug launch keeps only the arguments that are useful for selecting and loading the robot.
-    The normal defaults from `robot.launch.py` are used for RSP, bridge, ros2_control, spawners,
-    and controller remappings.
+    This debug launch declares the same robot-loading arguments as `robot.launch.py` and forwards
+    them into the included launch file. That keeps the debug entry point explicit while still
+    allowing callers to override RSP, bridge, ros2_control, spawner, and controller remapping
+    options from this top-level launch file. The defaults are repeated here intentionally so this
+    launch file can be used to test those public launch arguments directly.
     """
     launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
         'namespace': LaunchConfiguration('namespace'),
@@ -142,6 +144,18 @@ def _include_robot() -> GroupAction:
         'use_sim_time': LaunchConfiguration('use_sim_time'),
         'model_xacro_args_file': LaunchConfiguration('model_xacro_args_file'),
         'sim_file': LaunchConfiguration('sim_file'),
+        'bridge_config_file': LaunchConfiguration('bridge_config_file'),
+        'rsp_node_arguments': LaunchConfiguration('rsp_node_arguments'),
+        'bridge_node_arguments': LaunchConfiguration('bridge_node_arguments'),
+        'controller_manager_node_arguments': LaunchConfiguration('controller_manager_node_arguments'),
+        'joint_state_broadcaster_spawner_options': LaunchConfiguration('joint_state_broadcaster_spawner_options'),
+        'mima_controller_spawner_options': LaunchConfiguration('mima_controller_spawner_options'),
+        'fork_trajectory_controller_spawner_options': LaunchConfiguration('fork_trajectory_controller_spawner_options'),
+        'joint_state_broadcaster_controller_remappings': LaunchConfiguration(
+            'joint_state_broadcaster_controller_remappings'
+        ),
+        'mima_controller_remappings': LaunchConfiguration('mima_controller_remappings'),
+        'fork_trajectory_controller_remappings': LaunchConfiguration('fork_trajectory_controller_remappings'),
     }
 
     return GroupAction(
