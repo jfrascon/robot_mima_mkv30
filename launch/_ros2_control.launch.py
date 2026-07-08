@@ -91,9 +91,9 @@ def generate_launch_description() -> LaunchDescription:
             rlh.SetRobotNamespace(
                 namespace=LaunchConfiguration('namespace'),
                 robot_name=LaunchConfiguration('robot_name'),
-                robot_namespace_key='robot_namespace',
+                output_context_key='robot_namespace',
             ),
-            rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), robot_prefix_key='robot_prefix'),
+            rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
             OpaqueFunction(function=_launch_ros2_control),
         ]
     )

@@ -132,13 +132,13 @@ def generate_launch_description() -> LaunchDescription:
         rlh.SetRobotNamespace(
             namespace=LaunchConfiguration('namespace'),
             robot_name=LaunchConfiguration('robot_name'),
-            robot_namespace_key='robot_namespace',
+            output_context_key='robot_namespace',
         ),
-        rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), robot_prefix_key='robot_prefix'),
+        rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
         rlh.ProcessParamsFile(
             params_file=LaunchConfiguration('params_file'),
             allow_substs=LaunchConfiguration('params_file_allow_substs'),
-            output_params_file_key='params_file',
+            output_context_key='params_file',
         ),
         _include_rsp(),
         _include_ros2_control(),
