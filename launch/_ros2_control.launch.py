@@ -16,21 +16,14 @@ from robot_mima_mkv30.model_utils import (
     DEFAULT_MIMA_CONTROLLER_REMAPPINGS,
 )
 
-# Default remappings in the launch arguments `joint_state_broadcaster_controller_remappings`,
-# `mima_controller_remappings`, and `fork_trajectory_controller_remappings` are always applied.
-# The user can override any remapping individually.
-# If the user wants to change a remmaping, for any controller, they do not need to insert all
-# of them, they can just insert the one they want to change. The remapping(s) inserted by the user
-# are merged with the defaults, so even if the user just inserts one remapping, the rest of the
-# defaults are kept. If the user re-defines all the remappings for a controller, then the defaults
-# are replaced by the user-provided remappings.
+# The default controller remappings make the standard launch configuration use the expected topic
+# names.
+# If a caller overrides one of these launch arguments, the caller replaces the whole remapping list
+# for that controller and is responsible for providing every remapping it still needs.
 
 
 def generate_launch_description() -> LaunchDescription:
     """
-    `params_file` points to the parameter YAML file that contains the configuration for the
-    controller manager and the controllers.
-    `params_file_allow_substs` indicates if dynamic substitutions are allowed in the parameter file.
     When `use_sim_time` is true, the ros2_control_node is not started; Gazebo Sim takes care of
     starting the controller manager through the `gz_ros2_control` plugin.
     When `use_sim_time` is false, the ros2_control_node is started by this launch file.
@@ -55,8 +48,8 @@ def generate_launch_description() -> LaunchDescription:
                 'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
             ),
             DeclareLaunchArgument(
-                'controller_manager_node_arguments',
-                default_value='{"output": "both", "respawn": false, "ros_arguments": ["--log-level", "info"]}',
+                'controller_manager_node_args',
+                default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
@@ -101,12 +94,12 @@ def generate_launch_description() -> LaunchDescription:
                 output_context_key='params_file',
                 condition=IfCondition(LaunchConfiguration('params_file_allow_substs')),
             ),
-            OpaqueFunction(function=_launch_ros2_control),
+            OpaqueFunction(function=_launch_nodes),
         ]
     )
 
 
-def _launch_ros2_control(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
+def _launch_nodes(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     # If use_sim_time is true, the ros2_control_node is not started; Gazebo Sim takes care of
     # starting the controller manager through the `gz_ros2_control` plugin.
     # If use_sim_time is false, the ros2_control_node is started by this launch file.
@@ -130,61 +123,83 @@ def _launch_ros2_control(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
                 ],
                 # Add extra arguments like `--log-level debug`, `respawn`, ...
                 **rlh.resolve_node_arguments(
-                    LaunchConfiguration('controller_manager_node_arguments').perform(ctx),
+                    LaunchConfiguration('controller_manager_node_args').perform(ctx),
                     extra_rejected_arguments={'namespace'},
                 ),
             )
         )
 
+    # Build the argv list for each spawner with the same order used by the spawner CLI help:
+    # 1. Controller manager's name.
+    # 2. The spawner options.
+    # 3. --controller-ros-args: one string containing the ROS arguments for the controller node.
+    # 4. Controller name
+
     # Full name of the controller manager.
     controller_manager = rlh.resolve_name(robot_namespace, 'controller_manager')
 
-    # Each spawner receives one --controller-ros-args value. That value must be one string
-    # containing the ROS arguments for the controller node, the same way the CLI would quote
-    # the value after --controller-ros-args.
-
     common_controller_ros_args = f'--ros-args --param use_sim_time:={str(use_sim_time_bool).lower()}'
 
-    # Build the remapping fragments that will be passed to each controller through its
-    # spawner. Defaults are always kept, and user-provided remappings can replace targets
-    # or append new remappings.
-    joint_state_broadcaster_remappings = _merge_controller_remappings(
-        ctx, DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS, 'joint_state_broadcaster_controller_remappings'
+    joint_state_broadcaster_remappings = _to_controller_remap_args(
+        _resolve_controller_remappings(
+            'joint_state_broadcaster_controller_remappings',
+            LaunchConfiguration('joint_state_broadcaster_controller_remappings').perform(ctx),
+        )
     )
 
-    # Build the argv list for each spawner with the same order used by the spawner CLI help:
-    # first the spawner options, then --controller-ros-args, and finally the controller name
-    # as the positional argument.
-    joint_state_broadcaster_controller_spawner_arguments = (
-        ['--controller-manager', controller_manager]
-        + _resolve_spawner_options(ctx, 'joint_state_broadcaster_spawner_options')
-        + [
+    joint_state_broadcaster_controller_spawner_arguments = ['--controller-manager', controller_manager]
+    joint_state_broadcaster_controller_spawner_arguments.extend(
+        _resolve_spawner_options(
+            'joint_state_broadcaster_spawner_options',
+            LaunchConfiguration('joint_state_broadcaster_spawner_options').perform(ctx),
+        )
+    )
+    joint_state_broadcaster_controller_spawner_arguments.extend(
+        [
             '--controller-ros-args',
-            common_controller_ros_args + ' ' + joint_state_broadcaster_remappings,
+            _join_controller_ros_args(common_controller_ros_args, joint_state_broadcaster_remappings),
             'joint_state_broadcaster',
         ]
     )
 
-    mima_controller_remappings = _merge_controller_remappings(
-        ctx, DEFAULT_MIMA_CONTROLLER_REMAPPINGS, 'mima_controller_remappings'
+    mima_controller_remappings = _to_controller_remap_args(
+        _resolve_controller_remappings(
+            'mima_controller_remappings', LaunchConfiguration('mima_controller_remappings').perform(ctx)
+        )
     )
 
-    mima_controller_spawner_arguments = (
-        ['--controller-manager', controller_manager]
-        + _resolve_spawner_options(ctx, 'mima_controller_spawner_options')
-        + ['--controller-ros-args', common_controller_ros_args + ' ' + mima_controller_remappings, 'mima_controller']
+    mima_controller_spawner_arguments = ['--controller-manager', controller_manager]
+    mima_controller_spawner_arguments.extend(
+        _resolve_spawner_options(
+            'mima_controller_spawner_options', LaunchConfiguration('mima_controller_spawner_options').perform(ctx)
+        )
     )
-
-    fork_trajectory_controller_remappings = _merge_controller_remappings(
-        ctx, DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS, 'fork_trajectory_controller_remappings'
-    )
-
-    fork_trajectory_controller_spawner_arguments = (
-        ['--controller-manager', controller_manager]
-        + _resolve_spawner_options(ctx, 'fork_trajectory_controller_spawner_options')
-        + [
+    mima_controller_spawner_arguments.extend(
+        [
             '--controller-ros-args',
-            common_controller_ros_args + ' ' + fork_trajectory_controller_remappings,
+            _join_controller_ros_args(common_controller_ros_args, mima_controller_remappings),
+            'mima_controller',
+        ]
+    )
+
+    fork_trajectory_controller_remappings = _to_controller_remap_args(
+        _resolve_controller_remappings(
+            'fork_trajectory_controller_remappings',
+            LaunchConfiguration('fork_trajectory_controller_remappings').perform(ctx),
+        )
+    )
+
+    fork_trajectory_controller_spawner_arguments = ['--controller-manager', controller_manager]
+    fork_trajectory_controller_spawner_arguments.extend(
+        _resolve_spawner_options(
+            'fork_trajectory_controller_spawner_options',
+            LaunchConfiguration('fork_trajectory_controller_spawner_options').perform(ctx),
+        )
+    )
+    fork_trajectory_controller_spawner_arguments.extend(
+        [
+            '--controller-ros-args',
+            _join_controller_ros_args(common_controller_ros_args, fork_trajectory_controller_remappings),
             'fork_trajectory_controller',
         ]
     )
@@ -210,66 +225,35 @@ def _launch_ros2_control(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     return ldes
 
 
-def _resolve_controller_log_args(ctx: LaunchContext, launch_argument_name: str) -> str:
+def _resolve_controller_remappings(
+    launch_argument_name: str, launch_argument_value: str
+) -> list[tuple[str, str]] | None:
     """
-    Read and validate the log arguments for one controller.
+    Resolve one controller remapping launch argument from its JSON string value.
 
-    ``launch_argument_name`` is the name of a launch argument whose value is written like a small
-    command line. This function accepts only ``--log-level`` followed by one value. The value can be
-    a general level such as ``debug`` or a logger-specific level such as
-    ``botzilla.mima_controller:=debug``.
-
-    The returned string is ready to be appended inside the single ``--controller-ros-args`` value
-    passed to the spawner. An empty launch argument returns an empty string.
+    Controller remappings are exposed as launch arguments, so callers pass them as strings.
+    This helper keeps the JSON parsing boundary in one place and makes JSON syntax errors mention
+    the launch argument name that contains the invalid value.
     """
-    raw_value = LaunchConfiguration(launch_argument_name).perform(ctx)
-    tokens = shlex.split(raw_value)
-    allowed_log_levels = {'debug', 'info', 'warn', 'error', 'fatal'}
-    log_args: list[str] = []
-    index = 0
+    try:
+        raw_remappings = json.loads(launch_argument_value)
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            f"Launch argument '{launch_argument_name}' must be valid JSON containing "
+            f'a list of [from, to] remapping pairs.'
+        ) from error
 
-    while index < len(tokens):
-        token = tokens[index]
-
-        if token != '--log-level':
-            raise ValueError(
-                f"Launch argument '{launch_argument_name}' contains unsupported controller log "
-                f"option '{token}'. Only '--log-level <level>' is allowed."
-            )
-
-        if index + 1 >= len(tokens):
-            raise ValueError(f"Launch argument '{launch_argument_name}' option '--log-level' requires a value.")
-
-        value = tokens[index + 1]
-        if value.startswith('-'):
-            raise ValueError(f"Launch argument '{launch_argument_name}' option '--log-level' requires a value.")
-
-        if ':=' in value:
-            logger_name, level = value.rsplit(':=', 1)
-            if not logger_name:
-                raise ValueError(f"Launch argument '{launch_argument_name}' has an empty logger name in '{value}'.")
-        else:
-            level = value
-
-        if level not in allowed_log_levels:
-            raise ValueError(
-                f"Launch argument '{launch_argument_name}' has unsupported log level '{level}'. "
-                f'Allowed levels are: {sorted(allowed_log_levels)}.'
-            )
-
-        log_args.extend([token, value])
-        index += 2
-
-    return ' '.join(log_args)
+    return rlh.resolve_remappings(launch_argument_name, raw_remappings)
 
 
-def _resolve_spawner_options(ctx: LaunchContext, launch_argument_name: str) -> list[str]:
+def _resolve_spawner_options(launch_argument_name: str, launch_argument_value: str) -> list[str]:
     """
     Read and validate the extra options for one controller spawner.
 
     ``launch_argument_name`` is the name of a launch argument such as
-    ``mima_controller_spawner_options``. The value of that launch argument is written like a small
-    command line, for example ``--switch-timeout 30.0 --inactive``. This function uses
+    ``mima_controller_spawner_options`` and is used only in error messages.
+    ``launch_argument_value`` is the already resolved value of that launch argument. It is written
+    like a small command line, for example ``--switch-timeout 30.0 --inactive``. This function uses
     ``shlex.split`` so quoted values are split with the same rules a shell would use.
 
     This function is the only place that decides which user-provided options are allowed to reach
@@ -280,7 +264,7 @@ def _resolve_spawner_options(ctx: LaunchContext, launch_argument_name: str) -> l
 
     The launch file does not let this argument set the controller name, controller manager,
     parameter files, or controller ROS arguments. Those values are built explicitly in
-    ``_launch_ros2_control`` so every spawner call keeps the same shape.
+    ``_launch_nodes`` so every spawner call keeps the same shape.
     """
     allowed_spawner_flag_options = {
         '--load-only',
@@ -295,9 +279,8 @@ def _resolve_spawner_options(ctx: LaunchContext, launch_argument_name: str) -> l
 
     allowed_options = sorted(allowed_spawner_flag_options | allowed_spawner_value_options)
 
-    raw_value = LaunchConfiguration(launch_argument_name).perform(ctx)
     # Use shlex.split to handle quoted values and split the string into tokens.
-    tokens = shlex.split(raw_value)
+    tokens = shlex.split(launch_argument_value)
     spawner_options: list[str] = []
     index = 0
 
@@ -341,60 +324,15 @@ def _resolve_spawner_options(ctx: LaunchContext, launch_argument_name: str) -> l
     return spawner_options
 
 
-def _merge_controller_remappings(
-    ctx: LaunchContext, default_remappings_str: str, remappings_launch_argument: str
-) -> str:
+def _join_controller_ros_args(*args: str) -> str:
+    return ' '.join(arg for arg in args if arg)
+
+
+def _to_controller_remap_args(remappings: list[tuple[str, str]] | None) -> str:
     """
-    Build the ``--remap`` fragments for one controller spawner.
-
-    ``default_remappings_str`` is the JSON string used as the default value of the controller
-    remappings launch argument. ``remappings_launch_argument`` is the name of the launch argument
-    that can add remappings or replace the target of an existing remapping. Both values use this
-    JSON shape: ``[["from", "to"], ["from", "to"]]``.
-
-    The default remappings are always loaded first. They are part of the robot launch contract and
-    this function does not provide a way to delete them. User remappings are then merged by their
-    source topic, which is the first item in each pair. If the user repeats a default source topic,
-    the user value replaces the default target. If the user provides a new source topic, that
-    remapping is appended after the defaults.
-
-    A launch argument value of ``[]`` is valid and means that no user remappings are added. A launch
-    argument value of ``null`` is also treated as no user remappings because
-    ``rlh.resolve_remappings`` returns ``None`` for that value. Invalid JSON, empty strings, and
-    malformed remapping pairs raise ``RuntimeError`` with the launch argument name in the message.
-
-    The return value is one string because the spawner expects all controller ROS arguments as the
-    value of one ``--controller-ros-args`` option. For example, two merged remappings are returned
-    as ``--remap from1:=to1 --remap from2:=to2``.
+    Convert resolved controller remapping pairs to the string expected by ``--controller-ros-args``.
     """
-    remappings_str = LaunchConfiguration(remappings_launch_argument).perform(ctx)
+    if not remappings:
+        return ''
 
-    try:
-        default_remappings = rlh.resolve_remappings(
-            'default_' + remappings_launch_argument, json.loads(default_remappings_str)
-        )
-        if default_remappings is None:
-            raise RuntimeError(
-                f"Default remappings for '{remappings_launch_argument}' must be a JSON list of [from, to] pairs."
-            )
-    except json.JSONDecodeError as error:
-        raise RuntimeError(f"Default remappings for '{remappings_launch_argument}' must be valid JSON.") from error
-    except ValueError as error:
-        raise RuntimeError(str(error)) from error
-
-    try:
-        remapping_overrides = rlh.resolve_remappings(remappings_launch_argument, json.loads(remappings_str))
-    except json.JSONDecodeError as error:
-        raise RuntimeError(
-            f"Launch argument '{remappings_launch_argument}' must be a JSON list of [from, to] pairs."
-        ) from error
-    except ValueError as error:
-        raise RuntimeError(str(error)) from error
-
-    merged_remappings = {from_topic: f'--remap {from_topic}:={to_topic}' for from_topic, to_topic in default_remappings}
-
-    if remapping_overrides is not None:
-        for from_topic, to_topic in remapping_overrides:
-            merged_remappings[from_topic] = f'--remap {from_topic}:={to_topic}'
-
-    return ' '.join(merged_remappings.values())
+    return ' '.join(f'--remap {source_topic}:={target_topic}' for source_topic, target_topic in remappings)

@@ -67,7 +67,7 @@ def test_launch_show_args_lists_expected_arguments() -> None:
     assert "'params_file'" in output, output
     assert "'model_xacro_args_file'" in output, output
     assert "'params_file_allow_substs'" in output, output
-    assert "'bridge_node_arguments'" in output, output
-    assert "'rsp_node_arguments'" in output, output
+    assert "'ros_gz_bridge_node_args'" in output, output
+    assert "'robot_state_publisher_node_args'" in output, output
     assert "'properties_file'" not in output, output
     assert "'controller_config_file'" not in output, output

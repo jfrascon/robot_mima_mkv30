@@ -14,7 +14,7 @@ def test_quote_xacro_argument_value_uses_shell_quoting_when_needed() -> None:
 
 
 def _load_rsp_launch_module() -> ModuleType:
-    module_path = PACKAGE_DIR / 'launch' / '_rsp.launch.py'
+    module_path = PACKAGE_DIR / 'launch' / '_robot_state_publisher.launch.py'
     spec = importlib.util.spec_from_file_location('robot_mima_mkv30_rsp_launch', module_path)
 
     assert spec is not None

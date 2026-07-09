@@ -61,18 +61,18 @@ def generate_launch_description() -> LaunchDescription:
             # Required.
             DeclareLaunchArgument('bridge_config_file', description='Path with the configuration for the bridge'),
             DeclareLaunchArgument(
-                'rsp_node_arguments',
-                default_value='{"output": "both", "respawn": false}',
+                'robot_state_publisher_node_args',
+                default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
-                'bridge_node_arguments',
-                default_value='{"output": "both", "respawn": false}',
+                'ros_gz_bridge_node_args',
+                default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
-                'controller_manager_node_arguments',
-                default_value='{"output": "both", "respawn": false}',
+                'controller_manager_node_args',
+                default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
@@ -145,9 +145,9 @@ def _include_robot() -> GroupAction:
         'model_xacro_args_file': LaunchConfiguration('model_xacro_args_file'),
         'sim_file': LaunchConfiguration('sim_file'),
         'bridge_config_file': LaunchConfiguration('bridge_config_file'),
-        'rsp_node_arguments': LaunchConfiguration('rsp_node_arguments'),
-        'bridge_node_arguments': LaunchConfiguration('bridge_node_arguments'),
-        'controller_manager_node_arguments': LaunchConfiguration('controller_manager_node_arguments'),
+        'robot_state_publisher_node_args': LaunchConfiguration('robot_state_publisher_node_args'),
+        'ros_gz_bridge_node_args': LaunchConfiguration('ros_gz_bridge_node_args'),
+        'controller_manager_node_args': LaunchConfiguration('controller_manager_node_args'),
         'joint_state_broadcaster_spawner_options': LaunchConfiguration('joint_state_broadcaster_spawner_options'),
         'mima_controller_spawner_options': LaunchConfiguration('mima_controller_spawner_options'),
         'fork_trajectory_controller_spawner_options': LaunchConfiguration('fork_trajectory_controller_spawner_options'),
@@ -180,8 +180,7 @@ def _launch_rviz() -> Node:
         executable='rviz2',
         namespace=LaunchConfiguration('namespace'),
         arguments=['-d', PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'rviz', 'sim_debug.rviz'])],
-        output='screen',
-        emulate_tty=True,
+        output='both',
         condition=IfCondition(LaunchConfiguration('use_rviz')),
     )
 
