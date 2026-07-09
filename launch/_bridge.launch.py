@@ -3,9 +3,8 @@ from launch import LaunchContext, LaunchDescription, LaunchDescriptionEntity
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
-from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
 from launch_ros.actions import Node
-from launch_ros.descriptions import ParameterFile
+from launch_ros.descriptions import ParameterFile, ParameterValue
 from launch_ros.parameters_type import SomeParameters
 from robotics_description.bridge_configurations import create_battery_bridges
 
@@ -47,6 +46,12 @@ def generate_launch_description() -> LaunchDescription:
             output_context_key='robot_namespace',
         ),
         rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
+        rlh.RequireFile(path=LaunchConfiguration('params_file')),
+        rlh.RenderParamsFile(
+            params_file=LaunchConfiguration('params_file'),
+            output_context_key='params_file',
+            condition=IfCondition(LaunchConfiguration('params_file_allow_substs')),
+        ),
         OpaqueFunction(function=_launch_node, condition=IfCondition(LaunchConfiguration('use_sim_time'))),
     ]
 
@@ -61,25 +66,15 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     `use_sim_time` is true.
     """
 
-    # launch_ros.parameter_descriptions.ParameterFile accepts param_file as FilePath or
-    # SomeSubstitutionsType, so params_file can stay as a LaunchConfiguration and be resolved later.
-    # The same class also annotates allow_substs as bool or SomeSubstitutionsType, but Jazzy
-    # validates that argument as a bool when the ParameterFile object is constructed. Because of
-    # that runtime validation, params_file_allow_substs must be evaluated before it is passed as
-    # allow_substs.
-    params_file_allow_substs = perform_typed_substitution(
-        ctx, normalize_typed_substitution(LaunchConfiguration('params_file_allow_substs'), bool), bool
-    )
-
     parameters: SomeParameters = [
-        ParameterFile(LaunchConfiguration('params_file'), allow_substs=params_file_allow_substs),
+        ParameterFile(LaunchConfiguration('params_file'), allow_substs=False),
         # `expand_gz_topic_names` is always true because Gazebo topics are expected to include the
         # robot namespace so multiple robots can run in the same simulation.
         # `override_frame_id` is set to an empty string because Gazebo plugins publish the required
         # frame_id.
         {
             'use_sim_time': True,
-            'config_file': LaunchConfiguration('config_file'),
+            'config_file': ParameterValue(LaunchConfiguration('config_file'), value_type=str),
             'expand_gz_topic_names': True,
             'override_frame_id': '',
         },

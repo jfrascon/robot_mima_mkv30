@@ -1,6 +1,7 @@
 import ros2_launch_helpers as rlh
 from launch import LaunchDescription, LaunchDescriptionEntity
 from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
@@ -135,10 +136,11 @@ def generate_launch_description() -> LaunchDescription:
             output_context_key='robot_namespace',
         ),
         rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
-        rlh.ProcessParamsFile(
+        rlh.RequireFile(path=LaunchConfiguration('params_file')),
+        rlh.RenderParamsFile(
             params_file=LaunchConfiguration('params_file'),
-            allow_substs=LaunchConfiguration('params_file_allow_substs'),
             output_context_key='params_file',
+            condition=IfCondition(LaunchConfiguration('params_file_allow_substs')),
         ),
         _include_rsp(),
         _include_ros2_control(),

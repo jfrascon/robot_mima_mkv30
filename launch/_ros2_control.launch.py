@@ -4,11 +4,12 @@ import shlex
 import ros2_launch_helpers as rlh
 from launch import LaunchDescription, LaunchDescriptionEntity
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.conditions import IfCondition
 from launch.launch_context import LaunchContext
 from launch.substitutions import LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
 from launch_ros.actions import Node
-from launch_ros.descriptions import ParameterFile
+from launch_ros.descriptions import ParameterFile, ParameterValue
 from robot_mima_mkv30.model_utils import (
     DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS,
     DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS,
@@ -94,6 +95,12 @@ def generate_launch_description() -> LaunchDescription:
                 output_context_key='robot_namespace',
             ),
             rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
+            rlh.RequireFile(path=LaunchConfiguration('params_file')),
+            rlh.RenderParamsFile(
+                params_file=LaunchConfiguration('params_file'),
+                output_context_key='params_file',
+                condition=IfCondition(LaunchConfiguration('params_file_allow_substs')),
+            ),
             OpaqueFunction(function=_launch_ros2_control),
         ]
     )
@@ -112,21 +119,14 @@ def _launch_ros2_control(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     ldes: list[LaunchDescriptionEntity] = []
 
     if not use_sim_time_bool:
-        # ParameterFile can keep params_file as a LaunchConfiguration because launch_ros
-        # resolves the file path later. In Jazzy, allow_substs is validated as a bool in the
-        # constructor, so it must be evaluated here before the ParameterFile object is created.
-        params_file_allow_substs = perform_typed_substitution(
-            ctx, normalize_typed_substitution(LaunchConfiguration('params_file_allow_substs'), bool), bool
-        )
-
         ldes.append(
             Node(
                 package='controller_manager',
                 executable='ros2_control_node',
                 namespace=robot_namespace,
                 parameters=[
-                    ParameterFile(LaunchConfiguration('params_file'), allow_substs=params_file_allow_substs),
-                    {'use_sim_time': use_sim_time_bool},
+                    ParameterFile(LaunchConfiguration('params_file'), allow_substs=False),
+                    {'use_sim_time': ParameterValue(LaunchConfiguration('use_sim_time'), value_type=bool)},
                 ],
                 # Add extra arguments like `--log-level debug`, `respawn`, ...
                 **rlh.resolve_node_arguments(
