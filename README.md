@@ -49,7 +49,7 @@ For `sensors1`, the main default files are:
 - `config/model_sensors1/default_params.yaml`
 - `config/model_sensors1/default_model_xacro_args.yaml`
 - `config/model_sensors1/default_simulation.yaml`
-- `config/model_sensors1/default_bridge.yaml`
+ - `config/model_sensors1/default_ros_gz_bridge.yaml`
 
 These files are not generic examples. They are the default configuration maintained by this package
 for the `sensors1` model.

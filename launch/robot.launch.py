@@ -74,13 +74,13 @@ def generate_launch_description() -> LaunchDescription:
             description='Path to the simulation YAML file.',
         ),
         DeclareLaunchArgument(
-            'bridge_config_file',
+            'ros_gz_bridge_config_file',
             default_value=PathJoinSubstitution(
                 [
                     FindPackageShare('robot_mima_mkv30'),
                     'config',
                     ['model_', LaunchConfiguration('robot_model')],
-                    'default_bridge.yaml',
+                    'default_ros_gz_bridge.yaml',
                 ]
             ),
             description='Path with the configuration for the bridge',
@@ -235,28 +235,28 @@ def _include_ros_gz_bridge() -> GroupAction:
         'use_sim_time': LaunchConfiguration('use_sim_time'),
     }
 
-    # In the original launch context the public keys are `bridge_config_file` and
+    # In the original launch context the public keys are `ros_gz_bridge_config_file` and
     # `ros_gz_bridge_node_args`. The included `_ros_gz_bridge.launch.py` does not declare those
     # keys; it declares `config_file` and `node_args`.
     #
     # For that reason this helper uses two mappings:
     #
     # - `launch_configurations` populates the new isolated context. It reads
-    #   `bridge_config_file` and `ros_gz_bridge_node_args` from this launch file and stores those
+    #   `ros_gz_bridge_config_file` and `ros_gz_bridge_node_args` from this launch file and stores those
     #   values under `config_file` and `node_args` in the isolated context.
     # - `launch_arguments` is passed to `IncludeLaunchDescription`. It must read `config_file` and
-    #   `node_args` from the isolated context, because `bridge_config_file` and
+    #   `node_args` from the isolated context, because `ros_gz_bridge_config_file` and
     #   `ros_gz_bridge_node_args` are not available there.
     #
     # Value flow:
-    # `bridge_config_file` in robot.launch.py -> `config_file` in the isolated context ->
+    # `ros_gz_bridge_config_file` in robot.launch.py -> `config_file` in the isolated context ->
     # `config_file` argument declared by _ros_gz_bridge.launch.py.
     # `ros_gz_bridge_node_args` in robot.launch.py -> `node_args` in the isolated context ->
     # `node_args` argument declared by _ros_gz_bridge.launch.py.
 
     launch_configurations = {
         **launch_mappings,
-        'config_file': LaunchConfiguration('bridge_config_file'),
+        'config_file': LaunchConfiguration('ros_gz_bridge_config_file'),
         'node_args': LaunchConfiguration('ros_gz_bridge_node_args'),
     }
 

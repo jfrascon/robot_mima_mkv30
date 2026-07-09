@@ -59,7 +59,9 @@ def generate_launch_description() -> LaunchDescription:
             # Required.
             DeclareLaunchArgument('sim_file', description='Path to the simulation YAML file.'),
             # Required.
-            DeclareLaunchArgument('bridge_config_file', description='Path with the configuration for the bridge'),
+            DeclareLaunchArgument(
+                'ros_gz_bridge_config_file', description='Path with the configuration for the bridge'
+            ),
             DeclareLaunchArgument(
                 'robot_state_publisher_node_args',
                 default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
@@ -144,7 +146,7 @@ def _include_robot() -> GroupAction:
         'use_sim_time': LaunchConfiguration('use_sim_time'),
         'model_xacro_args_file': LaunchConfiguration('model_xacro_args_file'),
         'sim_file': LaunchConfiguration('sim_file'),
-        'bridge_config_file': LaunchConfiguration('bridge_config_file'),
+        'ros_gz_bridge_config_file': LaunchConfiguration('ros_gz_bridge_config_file'),
         'robot_state_publisher_node_args': LaunchConfiguration('robot_state_publisher_node_args'),
         'ros_gz_bridge_node_args': LaunchConfiguration('ros_gz_bridge_node_args'),
         'controller_manager_node_args': LaunchConfiguration('controller_manager_node_args'),
