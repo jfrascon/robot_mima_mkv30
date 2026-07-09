@@ -20,7 +20,7 @@ def generate_launch_description() -> LaunchDescription:
     """
 
     ldes: list[LaunchDescriptionEntity] = [
-        DeclareLaunchArgument('namespace', default_value='', description="Project's namespace"),
+        DeclareLaunchArgument('namespace', default_value='', description='Project namespace'),
         DeclareLaunchArgument('robot_model', choices=get_models(), description='Robot model variant.'),
         DeclareLaunchArgument('robot_name', default_value='mima_mkv30', description="Robot's name"),
         DeclareLaunchArgument(
@@ -74,16 +74,16 @@ def generate_launch_description() -> LaunchDescription:
             description='Path to the simulation YAML file.',
         ),
         DeclareLaunchArgument(
-            'ros_gz_bridge_config_file',
+            'bridge_config_file',
             default_value=PathJoinSubstitution(
                 [
                     FindPackageShare('robot_mima_mkv30'),
                     'config',
                     ['model_', LaunchConfiguration('robot_model')],
-                    'default_ros_gz_bridge.yaml',
+                    'default_bridge.yaml',
                 ]
             ),
-            description='Path with the configuration for the bridge',
+            description='Path to the bridge configuration file',
         ),
         DeclareLaunchArgument(
             'robot_state_publisher_node_args',
@@ -91,7 +91,7 @@ def generate_launch_description() -> LaunchDescription:
             description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
         ),
         DeclareLaunchArgument(
-            'ros_gz_bridge_node_args',
+            'bridge_node_args',
             default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
             description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
         ),
@@ -144,7 +144,7 @@ def generate_launch_description() -> LaunchDescription:
         ),
         _include_robot_state_publisher(),
         _include_ros2_control(),
-        _include_ros_gz_bridge(),
+        _include_bridge(),
     ]
 
     return LaunchDescription(ldes)
@@ -210,13 +210,13 @@ def _include_robot_state_publisher() -> GroupAction:
     )
 
 
-def _include_ros_gz_bridge() -> GroupAction:
+def _include_bridge() -> GroupAction:
     """
     Include the bridge launch file with a new isolated launch context.
 
-    The public model launch file prepares `params_file` first. This helper then
-    passes the rendered parameter file and bridge node options to the internal
-    bridge launch file.
+    The public model launch file prepares `params_file` first. This helper then passes the rendered
+    parameter file, bridge configuration file, and bridge node options to the internal bridge launch
+    file.
     """
     # With `scoped=True`, `GroupAction` creates an isolated launch context for the included launch
     # file.
@@ -235,29 +235,29 @@ def _include_ros_gz_bridge() -> GroupAction:
         'use_sim_time': LaunchConfiguration('use_sim_time'),
     }
 
-    # In the original launch context the public keys are `ros_gz_bridge_config_file` and
-    # `ros_gz_bridge_node_args`. The included `_ros_gz_bridge.launch.py` does not declare those
-    # keys; it declares `config_file` and `node_args`.
+    # In the original launch context the public keys are `bridge_config_file` and
+    # `bridge_node_args`. The included `_bridge.launch.py` uses generic names for the same
+    # values: `config_file` and `node_args`.
     #
     # For that reason this helper uses two mappings:
     #
     # - `launch_configurations` populates the new isolated context. It reads
-    #   `ros_gz_bridge_config_file` and `ros_gz_bridge_node_args` from this launch file and stores those
+    #   `bridge_config_file` and `bridge_node_args` from this launch file and stores those
     #   values under `config_file` and `node_args` in the isolated context.
     # - `launch_arguments` is passed to `IncludeLaunchDescription`. It must read `config_file` and
-    #   `node_args` from the isolated context, because `ros_gz_bridge_config_file` and
-    #   `ros_gz_bridge_node_args` are not available there.
+    #   `node_args` from the isolated context, because `bridge_config_file` and
+    #   `bridge_node_args` are not available there.
     #
     # Value flow:
-    # `ros_gz_bridge_config_file` in robot.launch.py -> `config_file` in the isolated context ->
-    # `config_file` argument declared by _ros_gz_bridge.launch.py.
-    # `ros_gz_bridge_node_args` in robot.launch.py -> `node_args` in the isolated context ->
-    # `node_args` argument declared by _ros_gz_bridge.launch.py.
+    # `bridge_config_file` in robot.launch.py -> `config_file` in the isolated context ->
+    # `config_file` argument declared by _bridge.launch.py.
+    # `bridge_node_args` in robot.launch.py -> `node_args` in the isolated context ->
+    # `node_args` argument declared by _bridge.launch.py.
 
     launch_configurations = {
         **launch_mappings,
-        'config_file': LaunchConfiguration('ros_gz_bridge_config_file'),
-        'node_args': LaunchConfiguration('ros_gz_bridge_node_args'),
+        'config_file': LaunchConfiguration('bridge_config_file'),
+        'node_args': LaunchConfiguration('bridge_node_args'),
     }
 
     launch_arguments = {
@@ -273,7 +273,7 @@ def _include_ros_gz_bridge() -> GroupAction:
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
-                    PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_ros_gz_bridge.launch.py'])
+                    PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_bridge.launch.py'])
                 ),
                 launch_arguments=launch_arguments.items(),
             )

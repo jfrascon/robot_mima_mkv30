@@ -12,7 +12,7 @@ def test_bridge_launch_uses_shared_battery_bridge_configuration() -> None:
 
 
 def _load_bridge_launch_module() -> ModuleType:
-    module_path = PACKAGE_DIR / 'launch' / '_ros_gz_bridge.launch.py'
+    module_path = PACKAGE_DIR / 'launch' / '_bridge.launch.py'
     spec = importlib.util.spec_from_file_location('robot_mima_mkv30_bridge_launch', module_path)
 
     assert spec is not None

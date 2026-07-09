@@ -20,7 +20,7 @@
 # fields:
 # - `open_circuit_voltage_constant_coef`: Voltage at full charge in volts.
 #   If omitted, the macro uses the same value as `voltage`.
-# - `open_circuit_voltage_linear_coef`: Voltage decrease when the battery has  no charge.
+# - `open_circuit_voltage_linear_coef`: Voltage decrease when the battery has no charge.
 # - `initial_charge`: Initial charge of the battery in ampere-hours.
 # - `resistance`: Internal resistance in ohms.
 # - `smooth_current_tau`: Coefficient for smoothing current.
@@ -36,7 +36,7 @@
 # - `charging_time`: Hours needed to fully charge the battery with no load.
 # - `recharge_by_topic`: If true, the plugin also subscribes to Gazebo Transport message topics for starting and
 #   stopping recharge.
-# - When recharge is enabled, Gazebo always exposes these Gazebo Transportservices.
+# - When recharge is enabled, Gazebo always exposes these Gazebo Transport services.
 #   Both services use `gz::msgs::Boolean`:
 #   `/model/<model_name>/battery/main_battery/recharge/start`
 #   `/model/<model_name>/battery/main_battery/recharge/stop`

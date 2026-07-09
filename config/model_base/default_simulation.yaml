@@ -20,7 +20,7 @@
 # fields:
 # - `open_circuit_voltage_constant_coef`: Voltage at full charge in volts.
 #   If omitted, the macro uses the same value as `voltage`.
-# - `open_circuit_voltage_linear_coef`: Voltage decrease when the battery has  no charge.
+# - `open_circuit_voltage_linear_coef`: Voltage decrease when the battery has no charge.
 # - `initial_charge`: Initial charge of the battery in ampere-hours.
 # - `resistance`: Internal resistance in ohms.
 # - `smooth_current_tau`: Coefficient for smoothing current.

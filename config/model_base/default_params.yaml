@@ -1,4 +1,4 @@
-# Do not configure `use_sim_time` in this file, it set, it is overridden.
+# Do not configure `use_sim_time` in this file. If set, it is overridden.
 # The key `robot_prefix` can be used in this file.
 
 /**/robot_state_publisher:

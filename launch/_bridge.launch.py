@@ -18,7 +18,7 @@ def generate_launch_description() -> LaunchDescription:
     even if this launch file does not declare those keys.
 
     When use_sim_time is false, this launch file skips the bridge node because
-    the ROS-GZ bridge is only used in simulation.
+    the bridge is only used in simulation.
     """
 
     return LaunchDescription(
@@ -34,7 +34,7 @@ def generate_launch_description() -> LaunchDescription:
             DeclareLaunchArgument(
                 'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
             ),
-            DeclareLaunchArgument('config_file', description='Path with the configuration for the bridge'),
+            DeclareLaunchArgument('config_file', description='Path to the bridge configuration file'),
             DeclareLaunchArgument(
                 'node_args',
                 default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
@@ -59,7 +59,7 @@ def generate_launch_description() -> LaunchDescription:
 
 def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     """
-    Launch the ROS-GZ bridge for one robot instance.
+    Launch the bridge for one robot instance.
 
     The bridge is only useful when Gazebo is running, so this function is only executed when
     `use_sim_time` is true.

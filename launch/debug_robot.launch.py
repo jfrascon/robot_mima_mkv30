@@ -59,16 +59,14 @@ def generate_launch_description() -> LaunchDescription:
             # Required.
             DeclareLaunchArgument('sim_file', description='Path to the simulation YAML file.'),
             # Required.
-            DeclareLaunchArgument(
-                'ros_gz_bridge_config_file', description='Path with the configuration for the bridge'
-            ),
+            DeclareLaunchArgument('bridge_config_file', description='Path to the bridge configuration file'),
             DeclareLaunchArgument(
                 'robot_state_publisher_node_args',
                 default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
-                'ros_gz_bridge_node_args',
+                'bridge_node_args',
                 default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
@@ -133,7 +131,7 @@ def _include_robot() -> GroupAction:
 
     This debug launch declares the same robot-loading arguments as `robot.launch.py` and forwards
     them into the included launch file. That keeps the debug entry point explicit while still
-    allowing callers to override RSP, bridge, ros2_control, spawner, and controller remapping
+    allowing callers to override robot_state_publisher, bridge, ros2_control, spawner, and controller remapping
     options from this top-level launch file. The defaults are repeated here intentionally so this
     launch file can be used to test those public launch arguments directly.
     """
@@ -146,9 +144,9 @@ def _include_robot() -> GroupAction:
         'use_sim_time': LaunchConfiguration('use_sim_time'),
         'model_xacro_args_file': LaunchConfiguration('model_xacro_args_file'),
         'sim_file': LaunchConfiguration('sim_file'),
-        'ros_gz_bridge_config_file': LaunchConfiguration('ros_gz_bridge_config_file'),
+        'bridge_config_file': LaunchConfiguration('bridge_config_file'),
         'robot_state_publisher_node_args': LaunchConfiguration('robot_state_publisher_node_args'),
-        'ros_gz_bridge_node_args': LaunchConfiguration('ros_gz_bridge_node_args'),
+        'bridge_node_args': LaunchConfiguration('bridge_node_args'),
         'controller_manager_node_args': LaunchConfiguration('controller_manager_node_args'),
         'joint_state_broadcaster_spawner_options': LaunchConfiguration('joint_state_broadcaster_spawner_options'),
         'mima_controller_spawner_options': LaunchConfiguration('mima_controller_spawner_options'),
@@ -238,7 +236,7 @@ def _spawn_world() -> LaunchDescriptionEntity:
         'world_bridge_file': PathJoinSubstitution(
             [FindPackageShare('robot_mima_mkv30'), 'worlds', 'debug_world_bridge.yaml']
         ),
-        'bridge_name': 'world_ros_gz_bridge',
+        'bridge_name': 'world_bridge',
         'bridge_subscription_heartbeat': '1000',
         'bridge_expand_gz_topic_names': 'True',
         'bridge_override_timestamps_with_wall_time': 'False',

@@ -18,4 +18,4 @@ def test_default_bridge_configs_use_explicit_ros_and_gazebo_topic_names() -> Non
 
 
 def _default_bridge_files() -> list[Path]:
-    return sorted(PACKAGE_DIR.glob('config/model_*/default_ros_gz_bridge.yaml'))
+    return sorted(PACKAGE_DIR.glob('config/model_*/default_bridge.yaml'))
