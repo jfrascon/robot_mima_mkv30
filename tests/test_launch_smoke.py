@@ -5,10 +5,14 @@ from conftest import run_bash
 @pytest.mark.parametrize(
     ('launch_file', 'launch_args', 'expected_text'),
     [
-        ('robot.launch.py', 'robot_model:=base params_file_allow_substs:=True use_sim_time:=True', 'Robot initialized'),
         (
             'robot.launch.py',
-            'robot_model:=sensors1 robot_name:=mima_mkv30 params_file_allow_substs:=True use_sim_time:=True',
+            'robot_model:=base robot_params_file_allow_substs:=True use_sim_time:=True',
+            'Robot initialized',
+        ),
+        (
+            'robot.launch.py',
+            'robot_model:=sensors1 robot_name:=mima_mkv30 robot_params_file_allow_substs:=True use_sim_time:=True',
             'Creating GZ->ROS Bridge:',
         ),
     ],

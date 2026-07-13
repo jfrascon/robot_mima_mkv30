@@ -1,10 +1,12 @@
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+
 import ros2_launch_helpers as rlh
-from launch import LaunchDescription, LaunchDescriptionEntity
-from launch.actions import DeclareLaunchArgument, GroupAction, IncludeLaunchDescription
-from launch.conditions import IfCondition
+from launch import LaunchContext, LaunchDescription, LaunchDescriptionEntity
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction, SetLaunchConfiguration
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.some_substitutions_type import SomeSubstitutionsType
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
 from launch_ros.substitutions import FindPackageShare
 from robot_mima_mkv30.model_utils import (
     DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS,
@@ -19,312 +21,216 @@ def generate_launch_description() -> LaunchDescription:
     Build the launch description for one MiMA MKV30 robot model.
     """
 
-    ldes: list[LaunchDescriptionEntity] = [
-        DeclareLaunchArgument('namespace', default_value='', description='Project namespace'),
-        DeclareLaunchArgument('robot_model', choices=get_models(), description='Robot model variant.'),
-        DeclareLaunchArgument('robot_name', default_value='mima_mkv30', description="Robot's name"),
-        DeclareLaunchArgument(
-            'params_file',
-            default_value=PathJoinSubstitution(
-                [
-                    FindPackageShare('robot_mima_mkv30'),
-                    'config',
-                    ['model_', LaunchConfiguration('robot_model')],
-                    'default_params.yaml',
-                ]
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument('namespace', default_value='', description='Project namespace'),
+            DeclareLaunchArgument('robot_model', choices=get_models(), description='Robot model variant.'),
+            DeclareLaunchArgument('robot_name', default_value='mima_mkv30', description="Robot's name"),
+            DeclareLaunchArgument(
+                'robot_params_file',
+                default_value=PathJoinSubstitution(
+                    [
+                        FindPackageShare('robot_mima_mkv30'),
+                        'config',
+                        ['model_', LaunchConfiguration('robot_model')],
+                        'default_params.yaml',
+                    ]
+                ),
+                description='Path to the complete robot parameters file.',
             ),
-            description='Path to the complete robot parameters file.',
-        ),
-        # When params_file_allow_substs is true, the caller must insert into the context any
-        # key-value pair used in the params_file.
-        DeclareLaunchArgument(
-            'params_file_allow_substs',
-            default_value='True',
-            choices=['True', 'true', 'False', 'false'],
-            description='Allow ROS launch substitutions in params_file before including child launch files.',
-        ),
-        DeclareLaunchArgument(
-            'use_sim_time',
-            default_value='False',
-            choices=['True', 'true', 'False', 'false'],
-            description='Use simulation clock if true. This also enables the Gazebo ros2_control block.',
-        ),
-        DeclareLaunchArgument(
-            'model_xacro_args_file',
-            default_value=PathJoinSubstitution(
-                [
-                    FindPackageShare('robot_mima_mkv30'),
-                    'config',
-                    ['model_', LaunchConfiguration('robot_model')],
-                    'default_model_xacro_args.yaml',
-                ]
+            DeclareLaunchArgument(
+                'robot_params_file_allow_substs',
+                default_value='True',
+                choices=['True', 'true', 'False', 'false'],
+                description='Allow ROS launch substitutions in robot_params_file before including child launch files.',
             ),
-            description='Path to the YAML file with xacro arguments loaded from configuration.',
-        ),
-        DeclareLaunchArgument(
-            'sim_file',
-            default_value=PathJoinSubstitution(
-                [
-                    FindPackageShare('robot_mima_mkv30'),
-                    'config',
-                    ['model_', LaunchConfiguration('robot_model')],
-                    'default_simulation.yaml',
-                ]
+            DeclareLaunchArgument(
+                'use_sim_time',
+                default_value='False',
+                choices=['True', 'true', 'False', 'false'],
+                description='Use simulation clock if true. This also enables the Gazebo ros2_control block.',
             ),
-            description='Path to the simulation YAML file.',
-        ),
-        DeclareLaunchArgument(
-            'bridge_config_file',
-            default_value=PathJoinSubstitution(
-                [
-                    FindPackageShare('robot_mima_mkv30'),
-                    'config',
-                    ['model_', LaunchConfiguration('robot_model')],
-                    'default_bridge.yaml',
-                ]
+            DeclareLaunchArgument(
+                'robot_xacro_args_file',
+                default_value=PathJoinSubstitution(
+                    [
+                        FindPackageShare('robot_mima_mkv30'),
+                        'config',
+                        ['model_', LaunchConfiguration('robot_model')],
+                        'default_xacro_args.yaml',
+                    ]
+                ),
+                description='Path to the YAML file with xacro arguments loaded from configuration.',
             ),
-            description='Path to the bridge configuration file',
-        ),
-        DeclareLaunchArgument(
-            'robot_state_publisher_node_args',
-            default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
-            description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
-        ),
-        DeclareLaunchArgument(
-            'bridge_node_args',
-            default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
-            description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
-        ),
-        DeclareLaunchArgument(
-            'controller_manager_node_args',
-            default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
-            description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
-        ),
-        DeclareLaunchArgument(
-            'joint_state_broadcaster_spawner_options',
-            default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
-            description='Options for the joint_state_broadcaster controller spawner',
-        ),
-        DeclareLaunchArgument(
-            'mima_controller_spawner_options',
-            default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
-            description='Options for the mima_controller controller spawner',
-        ),
-        DeclareLaunchArgument(
-            'fork_trajectory_controller_spawner_options',
-            default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
-            description='Options for the fork_trajectory_controller controller spawner',
-        ),
-        DeclareLaunchArgument(
-            'joint_state_broadcaster_controller_remappings',
-            default_value=DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS,
-            description='Remappings for the joint_state_broadcaster controller',
-        ),
-        DeclareLaunchArgument(
-            'mima_controller_remappings',
-            default_value=DEFAULT_MIMA_CONTROLLER_REMAPPINGS,
-            description='Remappings for the mima_controller controller',
-        ),
-        DeclareLaunchArgument(
-            'fork_trajectory_controller_remappings',
-            default_value=DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS,
-            description='Remappings for the fork_trajectory_controller controller',
-        ),
-        rlh.SetRobotNamespace(
-            namespace=LaunchConfiguration('namespace'),
-            robot_name=LaunchConfiguration('robot_name'),
-            output_context_key='robot_namespace',
-        ),
-        rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
-        rlh.RequireFile(path=LaunchConfiguration('params_file')),
-        rlh.RenderParamsFile(
-            params_file=LaunchConfiguration('params_file'),
-            output_context_key='params_file',
-            condition=IfCondition(LaunchConfiguration('params_file_allow_substs')),
-        ),
-        _include_robot_state_publisher(),
-        _include_ros2_control(),
-        _include_bridge(),
-    ]
+            DeclareLaunchArgument(
+                'robot_sim_file',
+                default_value=PathJoinSubstitution(
+                    [
+                        FindPackageShare('robot_mima_mkv30'),
+                        'config',
+                        ['model_', LaunchConfiguration('robot_model')],
+                        'default_simulation.yaml',
+                    ]
+                ),
+                description='Path to the simulation YAML file.',
+            ),
+            DeclareLaunchArgument(
+                'robot_bridge_config_file',
+                default_value=PathJoinSubstitution(
+                    [
+                        FindPackageShare('robot_mima_mkv30'),
+                        'config',
+                        ['model_', LaunchConfiguration('robot_model')],
+                        'default_bridge.yaml',
+                    ]
+                ),
+                description='Path to the robot bridge configuration file.',
+            ),
+            DeclareLaunchArgument(
+                'robot_rsp_node_args',
+                default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
+                description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
+            ),
+            DeclareLaunchArgument(
+                'robot_bridge_node_args',
+                default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
+                description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
+            ),
+            DeclareLaunchArgument(
+                'robot_controller_manager_node_args',
+                default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
+                description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
+            ),
+            DeclareLaunchArgument(
+                'robot_joint_state_broadcaster_spawner_options',
+                default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
+                description='Options for the joint_state_broadcaster controller spawner',
+            ),
+            DeclareLaunchArgument(
+                'robot_mima_controller_spawner_options',
+                default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
+                description='Options for the mima_controller controller spawner',
+            ),
+            DeclareLaunchArgument(
+                'robot_fork_trajectory_controller_spawner_options',
+                default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
+                description='Options for the fork_trajectory_controller controller spawner',
+            ),
+            DeclareLaunchArgument(
+                'robot_joint_state_broadcaster_controller_remappings',
+                default_value=DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS,
+                description='Remappings for the joint_state_broadcaster controller',
+            ),
+            DeclareLaunchArgument(
+                'robot_mima_controller_remappings',
+                default_value=DEFAULT_MIMA_CONTROLLER_REMAPPINGS,
+                description='Remappings for the mima_controller controller',
+            ),
+            DeclareLaunchArgument(
+                'robot_fork_trajectory_controller_remappings',
+                default_value=DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS,
+                description='Remappings for the fork_trajectory_controller controller',
+            ),
+            rlh.RequireFile(path=LaunchConfiguration('robot_params_file')),
+            SetLaunchConfiguration('robot_type', 'mima_mkv30'),
+            # Insert the keys `robot_namespace` and `robot_prefix` into the launch context, with their
+            # values, so they can be substituted in the parameter file if needed.
+            rlh.SetRobotNamespace(
+                namespace=LaunchConfiguration('namespace'),
+                robot_name=LaunchConfiguration('robot_name'),
+                output_context_key='robot_namespace',
+            ),
+            rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
+            OpaqueFunction(function=_include_child_launch_files),
+        ]
+    )
 
-    return LaunchDescription(ldes)
 
+def _include_child_launch_files(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
+    ldes: list[LaunchDescriptionEntity] = []
 
-def _include_robot_state_publisher() -> GroupAction:
-    """
-    Include the robot_state_publisher launch file with a new isolated launch context.
-    """
-    # With `scoped=True`, `GroupAction` creates an isolated launch context for the included launch
-    # file.
-    # With `forwarding=False`, that isolated context does not automatically inherit launch
-    # configurations from this launch file.
-    # The `launch_configurations` argument below explicitly populates the isolated context with the
-    # keys that the included launch file is allowed to see.
-    # The `launch_arguments` passed to `IncludeLaunchDescription` must then read values from that
-    # isolated context, not from the original context.
+    # Render the parameter YAML once if needed.
+    # Each child action receives either the original path or the rendered parameters file.
+    # Child actions do not need to render the parameter file again.
 
-    launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
-        'namespace': LaunchConfiguration('namespace'),
-        'robot_model': LaunchConfiguration('robot_model'),
-        'robot_name': LaunchConfiguration('robot_name'),
-        'params_file': LaunchConfiguration('params_file'),
-        'params_file_allow_substs': 'False',
-        'use_sim_time': LaunchConfiguration('use_sim_time'),
-        'model_xacro_args_file': LaunchConfiguration('model_xacro_args_file'),
-        'sim_file': LaunchConfiguration('sim_file'),
-    }
+    params_file = LaunchConfiguration('robot_params_file').perform(ctx)
 
-    # In the original launch context the public key is `robot_state_publisher_node_args`.
-    # The included `_robot_state_publisher.launch.py` does not declare that key; it declares
-    # `node_args`.
-    #
-    # For that reason this helper uses two mappings:
-    #
-    # - `launch_configurations` populates the new isolated context. It reads
-    #   `robot_state_publisher_node_args`
-    #   from this launch file and stores that value under `node_args` in the isolated context.
-    # - `launch_arguments` is passed to `IncludeLaunchDescription`. It must read `node_args`
-    #   from the isolated context, because `robot_state_publisher_node_args` is not available there.
-    #
-    # Value flow:
-    # `robot_state_publisher_node_args` in robot.launch.py -> `node_args` in the isolated context ->
-    # `node_args` argument declared by _robot_state_publisher.launch.py.
+    if perform_typed_substitution(
+        ctx, normalize_typed_substitution(LaunchConfiguration('robot_params_file_allow_substs'), bool), bool
+    ):
+        # Create a temporary file to hold the rendered parameters.
+        with NamedTemporaryFile(prefix='params_', suffix='.yaml', delete=False) as temp_file:
+            output_path = Path(temp_file.name)
+        rlh.render_params_file(params_file, ctx, output_path)
+        params_file = str(output_path)
 
-    launch_configurations = {**launch_mappings, 'node_args': LaunchConfiguration('robot_state_publisher_node_args')}
-    launch_arguments = {**launch_mappings, 'node_args': LaunchConfiguration('node_args')}
-
-    return GroupAction(
-        scoped=True,
-        forwarding=False,
-        launch_configurations=launch_configurations,
-        actions=[
+    ldes.extend(
+        [
+            # Include robot_state_publisher.
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution(
                         [FindPackageShare('robot_mima_mkv30'), 'launch', '_robot_state_publisher.launch.py']
                     )
                 ),
-                launch_arguments=launch_arguments.items(),
-            )
-        ],
-    )
-
-
-def _include_bridge() -> GroupAction:
-    """
-    Include the bridge launch file with a new isolated launch context.
-
-    The public model launch file prepares `params_file` first. This helper then passes the rendered
-    parameter file, bridge configuration file, and bridge node options to the internal bridge launch
-    file.
-    """
-    # With `scoped=True`, `GroupAction` creates an isolated launch context for the included launch
-    # file.
-    # With `forwarding=False`, that isolated context does not automatically inherit launch
-    # configurations from this launch file.
-    # The `launch_configurations` argument below explicitly populates the isolated context with the
-    # keys that the included launch file is allowed to see.
-    # The `launch_arguments` passed to `IncludeLaunchDescription` must then read values from that
-    # isolated context, not from the original context.
-
-    launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
-        'namespace': LaunchConfiguration('namespace'),
-        'robot_name': LaunchConfiguration('robot_name'),
-        'params_file': LaunchConfiguration('params_file'),
-        'params_file_allow_substs': 'False',
-        'use_sim_time': LaunchConfiguration('use_sim_time'),
-    }
-
-    # In the original launch context the public keys are `bridge_config_file` and
-    # `bridge_node_args`. The included `_bridge.launch.py` uses generic names for the same
-    # values: `config_file` and `node_args`.
-    #
-    # For that reason this helper uses two mappings:
-    #
-    # - `launch_configurations` populates the new isolated context. It reads
-    #   `bridge_config_file` and `bridge_node_args` from this launch file and stores those
-    #   values under `config_file` and `node_args` in the isolated context.
-    # - `launch_arguments` is passed to `IncludeLaunchDescription`. It must read `config_file` and
-    #   `node_args` from the isolated context, because `bridge_config_file` and
-    #   `bridge_node_args` are not available there.
-    #
-    # Value flow:
-    # `bridge_config_file` in robot.launch.py -> `config_file` in the isolated context ->
-    # `config_file` argument declared by _bridge.launch.py.
-    # `bridge_node_args` in robot.launch.py -> `node_args` in the isolated context ->
-    # `node_args` argument declared by _bridge.launch.py.
-
-    launch_configurations = {
-        **launch_mappings,
-        'config_file': LaunchConfiguration('bridge_config_file'),
-        'node_args': LaunchConfiguration('bridge_node_args'),
-    }
-
-    launch_arguments = {
-        **launch_mappings,
-        'config_file': LaunchConfiguration('config_file'),
-        'node_args': LaunchConfiguration('node_args'),
-    }
-
-    return GroupAction(
-        scoped=True,
-        forwarding=False,
-        launch_configurations=launch_configurations,
-        actions=[
+                launch_arguments={
+                    'namespace': LaunchConfiguration('namespace'),
+                    'robot_model': LaunchConfiguration('robot_model'),
+                    'robot_name': LaunchConfiguration('robot_name'),
+                    'robot_rsp_params_file': params_file,
+                    'robot_rsp_params_file_allow_substs': 'False',  # Params file has already been rendered.
+                    'use_sim_time': LaunchConfiguration('use_sim_time'),
+                    'robot_xacro_args_file': LaunchConfiguration('robot_xacro_args_file'),
+                    'robot_sim_file': LaunchConfiguration('robot_sim_file'),
+                    'robot_rsp_node_args': LaunchConfiguration('robot_rsp_node_args'),
+                }.items(),
+            ),
+            # Include bridge.
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_bridge.launch.py'])
                 ),
-                launch_arguments=launch_arguments.items(),
-            )
-        ],
-    )
-
-
-def _include_ros2_control() -> GroupAction:
-    """
-    Include ros2_control launch file with a new isolated launch context.
-    """
-    # With `scoped=True`, `GroupAction` creates an isolated launch context for the included launch
-    # file.
-    # With `forwarding=False`, that isolated context does not automatically inherit launch
-    # configurations from this launch file.
-    # The `launch_configurations` argument below explicitly populates the isolated context with the
-    # keys that the included launch file is allowed to see.
-    # The `launch_arguments` passed to `IncludeLaunchDescription` must then read values from that
-    # isolated context, not from the original context.
-
-    launch_mappings: dict[SomeSubstitutionsType, SomeSubstitutionsType] = {
-        'namespace': LaunchConfiguration('namespace'),
-        'robot_name': LaunchConfiguration('robot_name'),
-        'params_file': LaunchConfiguration('params_file'),
-        'params_file_allow_substs': 'False',
-        'use_sim_time': LaunchConfiguration('use_sim_time'),
-        'controller_manager_node_args': LaunchConfiguration('controller_manager_node_args'),
-        'joint_state_broadcaster_spawner_options': LaunchConfiguration('joint_state_broadcaster_spawner_options'),
-        'mima_controller_spawner_options': LaunchConfiguration('mima_controller_spawner_options'),
-        'fork_trajectory_controller_spawner_options': LaunchConfiguration('fork_trajectory_controller_spawner_options'),
-        'joint_state_broadcaster_controller_remappings': LaunchConfiguration(
-            'joint_state_broadcaster_controller_remappings'
-        ),
-        'mima_controller_remappings': LaunchConfiguration('mima_controller_remappings'),
-        'fork_trajectory_controller_remappings': LaunchConfiguration('fork_trajectory_controller_remappings'),
-    }
-
-    # The keys in `launch_mappings` are the same keys declared by `_ros2_control.launch.py`.
-    # The included launch file receives those same keys, so this include does not need separate
-    # `launch_configurations` and `launch_arguments` mappings.
-
-    return GroupAction(
-        scoped=True,
-        forwarding=False,
-        launch_configurations=launch_mappings,
-        actions=[
+                launch_arguments={
+                    'namespace': LaunchConfiguration('namespace'),
+                    'robot_name': LaunchConfiguration('robot_name'),
+                    'robot_bridge_params_file': params_file,
+                    'robot_bridge_params_file_allow_substs': 'False',  # Params file has already been rendered.
+                    'use_sim_time': LaunchConfiguration('use_sim_time'),
+                    'robot_bridge_config_file': LaunchConfiguration('robot_bridge_config_file'),
+                    'robot_bridge_node_args': LaunchConfiguration('robot_bridge_node_args'),
+                }.items(),
+            ),
+            # Include ros2_control.
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_ros2_control.launch.py'])
                 ),
-                launch_arguments=launch_mappings.items(),
-            )
-        ],
+                launch_arguments={
+                    'namespace': LaunchConfiguration('namespace'),
+                    'robot_name': LaunchConfiguration('robot_name'),
+                    'robot_ros2_control_params_file': params_file,
+                    'robot_ros2_control_params_file_allow_substs': 'False',  # Params file has already been rendered.
+                    'use_sim_time': LaunchConfiguration('use_sim_time'),
+                    'robot_controller_manager_node_args': LaunchConfiguration('robot_controller_manager_node_args'),
+                    'robot_joint_state_broadcaster_spawner_options': LaunchConfiguration(
+                        'robot_joint_state_broadcaster_spawner_options'
+                    ),
+                    'robot_mima_controller_spawner_options': LaunchConfiguration(
+                        'robot_mima_controller_spawner_options'
+                    ),
+                    'robot_fork_trajectory_controller_spawner_options': LaunchConfiguration(
+                        'robot_fork_trajectory_controller_spawner_options'
+                    ),
+                    'robot_joint_state_broadcaster_controller_remappings': LaunchConfiguration(
+                        'robot_joint_state_broadcaster_controller_remappings'
+                    ),
+                    'robot_mima_controller_remappings': LaunchConfiguration('robot_mima_controller_remappings'),
+                    'robot_fork_trajectory_controller_remappings': LaunchConfiguration(
+                        'robot_fork_trajectory_controller_remappings'
+                    ),
+                }.items(),
+            ),
+        ]
     )
+
+    return ldes

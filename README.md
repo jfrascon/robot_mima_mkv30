@@ -37,7 +37,7 @@ The most relevant launch arguments are:
 - `robot_name`: sets the robot name used by the launch file.
 - `params_file`: selects the ROS parameter file.
 - `params_file_allow_substs`: enables or disables substitutions inside the parameter file.
-- `model_xacro_args_file`: selects the file with Xacro arguments for the model.
+- `robot_xacro_args_file`: selects the file with Xacro arguments for the robot.
 - `sim_file`: selects the simulation configuration file.
 
 ## Model Configuration
@@ -47,7 +47,7 @@ Each model has its own package-maintained configuration under `config/model_<nam
 For `sensors1`, the main default files are:
 
 - `config/model_sensors1/default_params.yaml`
-- `config/model_sensors1/default_model_xacro_args.yaml`
+- `config/model_sensors1/default_xacro_args.yaml`
 - `config/model_sensors1/default_simulation.yaml`
 - `config/model_sensors1/default_bridge.yaml`
 

@@ -3,7 +3,6 @@ from pathlib import Path
 
 import yaml
 from conftest import PACKAGE_DIR
-
 from robot_mima_mkv30.model_utils import get_models
 
 LAUNCH_SCOPED_XACRO_ARGS = {'sim_file', 'namespace', 'robot_name', 'ros2_control_config_file'}
@@ -72,9 +71,9 @@ SENSORS1_MODEL_XACRO_ARGS = BASE_MODEL_XACRO_ARGS | {
 
 
 def _load_model_xacro_args(robot_model: str) -> dict[str, object]:
-    model_xacro_args_file = PACKAGE_DIR / 'config' / f'model_{robot_model}' / 'default_model_xacro_args.yaml'
+    robot_xacro_args_file = PACKAGE_DIR / 'config' / f'model_{robot_model}' / 'default_xacro_args.yaml'
 
-    with model_xacro_args_file.open('r', encoding='utf-8') as file:
+    with robot_xacro_args_file.open('r', encoding='utf-8') as file:
         data = yaml.safe_load(file) or {}
 
     assert isinstance(data, dict)

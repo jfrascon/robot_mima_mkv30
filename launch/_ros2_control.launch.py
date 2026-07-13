@@ -4,7 +4,6 @@ import shlex
 import ros2_launch_helpers as rlh
 from launch import LaunchDescription, LaunchDescriptionEntity
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
-from launch.conditions import IfCondition
 from launch.launch_context import LaunchContext
 from launch.substitutions import LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
@@ -38,62 +37,61 @@ def generate_launch_description() -> LaunchDescription:
         [
             DeclareLaunchArgument('namespace', default_value='', description='Project namespace'),
             DeclareLaunchArgument('robot_name', description='The unique name for the robot'),
-            DeclareLaunchArgument('params_file', description='Path to the ros2_control parameters file.'),
             DeclareLaunchArgument(
-                'params_file_allow_substs',
+                'robot_ros2_control_params_file', description='Path to the ros2_control parameters file.'
+            ),
+            DeclareLaunchArgument(
+                'robot_ros2_control_params_file_allow_substs',
                 choices=['True', 'true', 'False', 'false'],
-                description='Allow ROS launch substitutions in params_file',
+                description='Allow ROS launch substitutions in robot_ros2_control_params_file',
             ),
             DeclareLaunchArgument(
                 'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
             ),
             DeclareLaunchArgument(
-                'controller_manager_node_args',
+                'robot_controller_manager_node_args',
                 default_value='{"output": "both", "ros_arguments": ["--log-level", "info"]}',
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             DeclareLaunchArgument(
-                'joint_state_broadcaster_spawner_options',
+                'robot_joint_state_broadcaster_spawner_options',
                 default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
                 description='Options for the joint_state_broadcaster spawner',
             ),
             DeclareLaunchArgument(
-                'mima_controller_spawner_options',
+                'robot_mima_controller_spawner_options',
                 default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
                 description='Options for the mima_controller spawner',
             ),
             DeclareLaunchArgument(
-                'fork_trajectory_controller_spawner_options',
+                'robot_fork_trajectory_controller_spawner_options',
                 default_value='--switch-timeout 30.0 --service-call-timeout 30.0',
                 description='Options for the fork_trajectory_controller spawner',
             ),
             DeclareLaunchArgument(
-                'joint_state_broadcaster_controller_remappings',
+                'robot_joint_state_broadcaster_controller_remappings',
                 default_value=DEFAULT_JOINT_STATE_BROADCASTER_CONTROLLER_REMAPPINGS,
                 description='Remappings for the joint_state_broadcaster controller',
             ),
             DeclareLaunchArgument(
-                'mima_controller_remappings',
+                'robot_mima_controller_remappings',
                 default_value=DEFAULT_MIMA_CONTROLLER_REMAPPINGS,
                 description='Remappings for the mima_controller controller',
             ),
             DeclareLaunchArgument(
-                'fork_trajectory_controller_remappings',
+                'robot_fork_trajectory_controller_remappings',
                 default_value=DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS,
                 description='Remappings for the fork_trajectory_controller controller',
             ),
+            rlh.RequireFile(path=LaunchConfiguration('robot_ros2_control_params_file')),
+            # Insert the keys `robot_namespace` and `robot_prefix` into the launch context, with their
+            # values, so they can be substituted in the parameter file if needed.
             rlh.SetRobotNamespace(
                 namespace=LaunchConfiguration('namespace'),
                 robot_name=LaunchConfiguration('robot_name'),
                 output_context_key='robot_namespace',
             ),
             rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
-            rlh.RequireFile(path=LaunchConfiguration('params_file')),
-            rlh.RenderParamsFile(
-                params_file=LaunchConfiguration('params_file'),
-                output_context_key='params_file',
-                condition=IfCondition(LaunchConfiguration('params_file_allow_substs')),
-            ),
             OpaqueFunction(function=_launch_nodes),
         ]
     )
@@ -112,18 +110,26 @@ def _launch_nodes(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     ldes: list[LaunchDescriptionEntity] = []
 
     if not use_sim_time_bool:
+        params_allow_substs = perform_typed_substitution(
+            ctx,
+            normalize_typed_substitution(LaunchConfiguration('robot_ros2_control_params_file_allow_substs'), bool),
+            bool,
+        )
+
         ldes.append(
             Node(
                 package='controller_manager',
                 executable='ros2_control_node',
                 namespace=robot_namespace,
                 parameters=[
-                    ParameterFile(LaunchConfiguration('params_file'), allow_substs=False),
+                    ParameterFile(
+                        LaunchConfiguration('robot_ros2_control_params_file'), allow_substs=params_allow_substs
+                    ),
                     {'use_sim_time': ParameterValue(LaunchConfiguration('use_sim_time'), value_type=bool)},
                 ],
                 # Add extra arguments like `--log-level debug`, `respawn`, ...
                 **rlh.resolve_node_arguments(
-                    LaunchConfiguration('controller_manager_node_args').perform(ctx),
+                    LaunchConfiguration('robot_controller_manager_node_args').perform(ctx),
                     extra_rejected_arguments={'namespace'},
                 ),
             )
@@ -142,16 +148,16 @@ def _launch_nodes(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
 
     joint_state_broadcaster_remappings = _to_controller_remap_args(
         _resolve_controller_remappings(
-            'joint_state_broadcaster_controller_remappings',
-            LaunchConfiguration('joint_state_broadcaster_controller_remappings').perform(ctx),
+            'robot_joint_state_broadcaster_controller_remappings',
+            LaunchConfiguration('robot_joint_state_broadcaster_controller_remappings').perform(ctx),
         )
     )
 
     joint_state_broadcaster_controller_spawner_arguments = ['--controller-manager', controller_manager]
     joint_state_broadcaster_controller_spawner_arguments.extend(
         _resolve_spawner_options(
-            'joint_state_broadcaster_spawner_options',
-            LaunchConfiguration('joint_state_broadcaster_spawner_options').perform(ctx),
+            'robot_joint_state_broadcaster_spawner_options',
+            LaunchConfiguration('robot_joint_state_broadcaster_spawner_options').perform(ctx),
         )
     )
     joint_state_broadcaster_controller_spawner_arguments.extend(
@@ -164,14 +170,15 @@ def _launch_nodes(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
 
     mima_controller_remappings = _to_controller_remap_args(
         _resolve_controller_remappings(
-            'mima_controller_remappings', LaunchConfiguration('mima_controller_remappings').perform(ctx)
+            'robot_mima_controller_remappings', LaunchConfiguration('robot_mima_controller_remappings').perform(ctx)
         )
     )
 
     mima_controller_spawner_arguments = ['--controller-manager', controller_manager]
     mima_controller_spawner_arguments.extend(
         _resolve_spawner_options(
-            'mima_controller_spawner_options', LaunchConfiguration('mima_controller_spawner_options').perform(ctx)
+            'robot_mima_controller_spawner_options',
+            LaunchConfiguration('robot_mima_controller_spawner_options').perform(ctx),
         )
     )
     mima_controller_spawner_arguments.extend(
@@ -184,16 +191,16 @@ def _launch_nodes(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
 
     fork_trajectory_controller_remappings = _to_controller_remap_args(
         _resolve_controller_remappings(
-            'fork_trajectory_controller_remappings',
-            LaunchConfiguration('fork_trajectory_controller_remappings').perform(ctx),
+            'robot_fork_trajectory_controller_remappings',
+            LaunchConfiguration('robot_fork_trajectory_controller_remappings').perform(ctx),
         )
     )
 
     fork_trajectory_controller_spawner_arguments = ['--controller-manager', controller_manager]
     fork_trajectory_controller_spawner_arguments.extend(
         _resolve_spawner_options(
-            'fork_trajectory_controller_spawner_options',
-            LaunchConfiguration('fork_trajectory_controller_spawner_options').perform(ctx),
+            'robot_fork_trajectory_controller_spawner_options',
+            LaunchConfiguration('robot_fork_trajectory_controller_spawner_options').perform(ctx),
         )
     )
     fork_trajectory_controller_spawner_arguments.extend(
@@ -251,7 +258,7 @@ def _resolve_spawner_options(launch_argument_name: str, launch_argument_value: s
     Read and validate the extra options for one controller spawner.
 
     ``launch_argument_name`` is the name of a launch argument such as
-    ``mima_controller_spawner_options`` and is used only in error messages.
+    ``robot_mima_controller_spawner_options`` and is used only in error messages.
     ``launch_argument_value`` is the already resolved value of that launch argument. It is written
     like a small command line, for example ``--switch-timeout 30.0 --inactive``. This function uses
     ``shlex.split`` so quoted values are split with the same rules a shell would use.

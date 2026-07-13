@@ -33,27 +33,27 @@ def test_resolve_controller_remappings_accepts_json_list() -> None:
     module = _load_ros2_control_launch_module()
 
     assert module._resolve_controller_remappings(
-        'mima_controller_remappings', '[["~/reference", "cmd_vel"], ["~/odometry", "odom"]]'
+        'robot_mima_controller_remappings', '[["~/reference", "cmd_vel"], ["~/odometry", "odom"]]'
     ) == [('~/reference', 'cmd_vel'), ('~/odometry', 'odom')]
 
 
 def test_resolve_controller_remappings_accepts_empty_json_list() -> None:
     module = _load_ros2_control_launch_module()
 
-    assert module._resolve_controller_remappings('mima_controller_remappings', '[]') == []
+    assert module._resolve_controller_remappings('robot_mima_controller_remappings', '[]') == []
 
 
 def test_resolve_controller_remappings_accepts_json_null() -> None:
     module = _load_ros2_control_launch_module()
 
-    assert module._resolve_controller_remappings('mima_controller_remappings', 'null') is None
+    assert module._resolve_controller_remappings('robot_mima_controller_remappings', 'null') is None
 
 
 def test_resolve_controller_remappings_rejects_invalid_json_with_argument_name() -> None:
     module = _load_ros2_control_launch_module()
 
-    with pytest.raises(ValueError, match='mima_controller_remappings'):
-        module._resolve_controller_remappings('mima_controller_remappings', '')
+    with pytest.raises(ValueError, match='robot_mima_controller_remappings'):
+        module._resolve_controller_remappings('robot_mima_controller_remappings', '')
 
 
 def test_to_controller_remap_args_accepts_empty_values() -> None:
