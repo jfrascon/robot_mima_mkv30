@@ -19,6 +19,29 @@ from robot_mima_mkv30.model_utils import (
 def generate_launch_description() -> LaunchDescription:
     """
     Build the launch description for one MiMA MKV30 robot model.
+
+    `use_sim_time` only controls the ROS clock used by the launched nodes.
+    When it is false, nodes use wall time from the host system.
+    When it is true, nodes read time from the `/clock` topic.
+
+    `robot_sim_file` controls whether the xacro model loads simulation-specific elements, such as
+    Gazebo plugins. Those plugins only make sense when the robot is launched for a simulated system
+    that publishes `/clock`.
+
+    Therefore, `use_sim_time=false` and a non-empty `robot_sim_file` is rejected.
+    That combination would ask for simulation plugins while launching the robot in non-simulated
+    time.
+
+    When `use_sim_time=true`, `robot_sim_file` may be empty or non-empty.
+    An empty value is valid for cases such as rosbag playback, where `/clock` exists but Gazebo
+    plugins are not loaded by this launch file.
+    A non-empty value loads the simulation-specific xacro elements and enables the bridge include.
+
+    `start_robot_controller_manager` controls who starts the robot controller manager.
+    When it is true, this launch file starts a local controller manager through ros2_control_node.
+    When it is false, this launch file still starts the controller spawners, but those spawners
+    expect an already running controller manager in the robot namespace.
+    This is the usual setup when Gazebo loads the ros2_control plugin from `robot_sim_file`.
     """
 
     return LaunchDescription(
@@ -48,7 +71,7 @@ def generate_launch_description() -> LaunchDescription:
                 'use_sim_time',
                 default_value='False',
                 choices=['True', 'true', 'False', 'false'],
-                description='Use simulation clock if true. This also enables the Gazebo ros2_control block.',
+                description='Use ROS time from /clock if true.',
             ),
             DeclareLaunchArgument(
                 'robot_xacro_args_file',
@@ -85,6 +108,12 @@ def generate_launch_description() -> LaunchDescription:
                     ]
                 ),
                 description='Path to the robot bridge configuration file.',
+            ),
+            DeclareLaunchArgument(
+                'start_robot_controller_manager',
+                default_value='True',
+                choices=['True', 'true', 'False', 'false'],
+                description='Start the robot controller manager if true.',
             ),
             DeclareLaunchArgument(
                 'robot_rsp_node_args',
@@ -133,8 +162,8 @@ def generate_launch_description() -> LaunchDescription:
             ),
             rlh.RequireFile(path=LaunchConfiguration('robot_params_file')),
             SetLaunchConfiguration('robot_type', 'mima_mkv30'),
-            # Insert the keys `robot_namespace` and `robot_prefix` into the launch context, with their
-            # values, so they can be substituted in the parameter file if needed.
+            # Insert `robot_namespace` and `robot_prefix` into the launch context.
+            # Their values can then be substituted in the parameter file if needed.
             rlh.SetRobotNamespace(
                 namespace=LaunchConfiguration('namespace'),
                 robot_name=LaunchConfiguration('robot_name'),
@@ -164,28 +193,48 @@ def _include_child_launch_files(ctx: LaunchContext) -> list[LaunchDescriptionEnt
         rlh.render_params_file(params_file, ctx, output_path)
         params_file = str(output_path)
 
-    ldes.extend(
-        [
-            # Include robot_state_publisher.
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(
-                    PathJoinSubstitution(
-                        [FindPackageShare('robot_mima_mkv30'), 'launch', '_robot_state_publisher.launch.py']
-                    )
-                ),
-                launch_arguments={
-                    'namespace': LaunchConfiguration('namespace'),
-                    'robot_model': LaunchConfiguration('robot_model'),
-                    'robot_name': LaunchConfiguration('robot_name'),
-                    'robot_rsp_params_file': params_file,
-                    'robot_rsp_params_file_allow_substs': 'False',  # Params file has already been rendered.
-                    'use_sim_time': LaunchConfiguration('use_sim_time'),
-                    'robot_xacro_args_file': LaunchConfiguration('robot_xacro_args_file'),
-                    'robot_sim_file': LaunchConfiguration('robot_sim_file'),
-                    'robot_rsp_node_args': LaunchConfiguration('robot_rsp_node_args'),
-                }.items(),
+    use_sim_time = (
+        perform_typed_substitution(ctx, normalize_typed_substitution(LaunchConfiguration('use_sim_time'), bool), bool),
+    )
+
+    robot_sim_file = LaunchConfiguration('robot_sim_file').perform(ctx)
+
+    # When topic '/clock' is not used as time source, it means the robot model is deployed in real
+    # conditions. In this case, the simulation file must be empty because simulation plugins must
+    # not be loaded.
+    if not use_sim_time and robot_sim_file:
+        raise ValueError('robot_sim_file must be empty when use_sim_time is false.')
+
+    # When the robot_sim_file is provided, check that it exists.
+    if robot_sim_file and not Path(robot_sim_file).is_file():
+        raise FileNotFoundError(f"File '{robot_sim_file}' does not exist.")
+
+    # Include robot_state_publisher.
+    ldes.append(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                PathJoinSubstitution(
+                    [FindPackageShare('robot_mima_mkv30'), 'launch', '_robot_state_publisher.launch.py']
+                )
             ),
-            # Include bridge.
+            launch_arguments={
+                'namespace': LaunchConfiguration('namespace'),
+                'robot_model': LaunchConfiguration('robot_model'),
+                'robot_name': LaunchConfiguration('robot_name'),
+                'robot_rsp_params_file': params_file,
+                'robot_rsp_params_file_allow_substs': 'False',  # Params file has already been rendered.
+                'use_sim_time': LaunchConfiguration('use_sim_time'),
+                'robot_xacro_args_file': LaunchConfiguration('robot_xacro_args_file'),
+                'robot_sim_file': robot_sim_file,
+                'robot_rsp_node_args': LaunchConfiguration('robot_rsp_node_args'),
+            }.items(),
+        )
+    )
+
+    # Include bridge only when a simulation file is provided.
+    # Without simulation plugins, Gazebo does not publish robot plugin topics for the bridge.
+    if robot_sim_file:
+        ldes.append(
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_bridge.launch.py'])
@@ -199,38 +248,39 @@ def _include_child_launch_files(ctx: LaunchContext) -> list[LaunchDescriptionEnt
                     'robot_bridge_config_file': LaunchConfiguration('robot_bridge_config_file'),
                     'robot_bridge_node_args': LaunchConfiguration('robot_bridge_node_args'),
                 }.items(),
+            )
+        )
+
+    # Include ros2_control.
+    ldes.append(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_ros2_control.launch.py'])
             ),
-            # Include ros2_control.
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(
-                    PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_ros2_control.launch.py'])
+            launch_arguments={
+                'namespace': LaunchConfiguration('namespace'),
+                'robot_name': LaunchConfiguration('robot_name'),
+                'robot_ros2_control_params_file': params_file,
+                'robot_ros2_control_params_file_allow_substs': 'False',  # Params file has already been rendered.
+                'use_sim_time': LaunchConfiguration('use_sim_time'),
+                'start_robot_controller_manager': LaunchConfiguration('start_robot_controller_manager'),
+                'robot_controller_manager_node_args': LaunchConfiguration('robot_controller_manager_node_args'),
+                'robot_joint_state_broadcaster_spawner_options': LaunchConfiguration(
+                    'robot_joint_state_broadcaster_spawner_options'
                 ),
-                launch_arguments={
-                    'namespace': LaunchConfiguration('namespace'),
-                    'robot_name': LaunchConfiguration('robot_name'),
-                    'robot_ros2_control_params_file': params_file,
-                    'robot_ros2_control_params_file_allow_substs': 'False',  # Params file has already been rendered.
-                    'use_sim_time': LaunchConfiguration('use_sim_time'),
-                    'robot_controller_manager_node_args': LaunchConfiguration('robot_controller_manager_node_args'),
-                    'robot_joint_state_broadcaster_spawner_options': LaunchConfiguration(
-                        'robot_joint_state_broadcaster_spawner_options'
-                    ),
-                    'robot_mima_controller_spawner_options': LaunchConfiguration(
-                        'robot_mima_controller_spawner_options'
-                    ),
-                    'robot_fork_trajectory_controller_spawner_options': LaunchConfiguration(
-                        'robot_fork_trajectory_controller_spawner_options'
-                    ),
-                    'robot_joint_state_broadcaster_controller_remappings': LaunchConfiguration(
-                        'robot_joint_state_broadcaster_controller_remappings'
-                    ),
-                    'robot_mima_controller_remappings': LaunchConfiguration('robot_mima_controller_remappings'),
-                    'robot_fork_trajectory_controller_remappings': LaunchConfiguration(
-                        'robot_fork_trajectory_controller_remappings'
-                    ),
-                }.items(),
-            ),
-        ]
+                'robot_mima_controller_spawner_options': LaunchConfiguration('robot_mima_controller_spawner_options'),
+                'robot_fork_trajectory_controller_spawner_options': LaunchConfiguration(
+                    'robot_fork_trajectory_controller_spawner_options'
+                ),
+                'robot_joint_state_broadcaster_controller_remappings': LaunchConfiguration(
+                    'robot_joint_state_broadcaster_controller_remappings'
+                ),
+                'robot_mima_controller_remappings': LaunchConfiguration('robot_mima_controller_remappings'),
+                'robot_fork_trajectory_controller_remappings': LaunchConfiguration(
+                    'robot_fork_trajectory_controller_remappings'
+                ),
+            }.items(),
+        )
     )
 
     return ldes

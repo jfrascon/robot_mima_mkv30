@@ -1,9 +1,11 @@
 import json
 import shlex
+from typing import cast
 
 import ros2_launch_helpers as rlh
 from launch import LaunchDescription, LaunchDescriptionEntity
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetLaunchConfiguration
+from launch.conditions import IfCondition
 from launch.launch_context import LaunchContext
 from launch.substitutions import LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
@@ -23,9 +25,9 @@ from robot_mima_mkv30.model_utils import (
 
 def generate_launch_description() -> LaunchDescription:
     """
-    When `use_sim_time` is true, the ros2_control_node is not started; Gazebo Sim takes care of
-    starting the controller manager through the `gz_ros2_control` plugin.
-    When `use_sim_time` is false, the ros2_control_node is started by this launch file.
+    This launch file always starts the configured controller spawners.
+    When `start_robot_controller_manager` is true, it also starts a local controller_manager.
+    When `start_robot_controller_manager` is false, the spawners expect an existing controller_manager.
 
     The controller names are fixed in this launch file. Users can tune the exposed spawner options,
     controller remappings, and controller manager node arguments, but they do not choose which
@@ -46,7 +48,14 @@ def generate_launch_description() -> LaunchDescription:
                 description='Allow ROS launch substitutions in robot_ros2_control_params_file',
             ),
             DeclareLaunchArgument(
-                'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
+                'use_sim_time',
+                choices=['True', 'true', 'False', 'false'],
+                description='Use ROS time from /clock if true.',
+            ),
+            DeclareLaunchArgument(
+                'start_robot_controller_manager',
+                choices=['True', 'true', 'False', 'false'],
+                description='Start the robot controller manager if true.',
             ),
             DeclareLaunchArgument(
                 'robot_controller_manager_node_args',
@@ -83,57 +92,92 @@ def generate_launch_description() -> LaunchDescription:
                 default_value=DEFAULT_FORK_TRAJECTORY_CONTROLLER_REMAPPINGS,
                 description='Remappings for the fork_trajectory_controller controller',
             ),
-            rlh.RequireFile(path=LaunchConfiguration('robot_ros2_control_params_file')),
-            # Insert the keys `robot_namespace` and `robot_prefix` into the launch context, with their
-            # values, so they can be substituted in the parameter file if needed.
+            # Insert `robot_type`, `robot_namespace` and `robot_prefix` into the launch context.
+            # Their values can then be substituted in the parameter file if needed.
+            SetLaunchConfiguration('robot_type', 'mima_mkv30'),
             rlh.SetRobotNamespace(
                 namespace=LaunchConfiguration('namespace'),
                 robot_name=LaunchConfiguration('robot_name'),
                 output_context_key='robot_namespace',
             ),
             rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
-            OpaqueFunction(function=_launch_nodes),
+            OpaqueFunction(
+                function=_launch_controller_manager,
+                condition=IfCondition(LaunchConfiguration('start_robot_controller_manager')),
+            ),
+            OpaqueFunction(function=_launch_controller_spawners),
         ]
     )
 
 
-def _launch_nodes(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
-    # If use_sim_time is true, the ros2_control_node is not started; Gazebo Sim takes care of
-    # starting the controller manager through the `gz_ros2_control` plugin.
-    # If use_sim_time is false, the ros2_control_node is started by this launch file.
-    use_sim_time_lc = LaunchConfiguration('use_sim_time')
-    use_sim_time_bool = perform_typed_substitution(ctx, normalize_typed_substitution(use_sim_time_lc, bool), bool)
+def _get_spawner_arguments(
+    use_sim_time: bool,
+    fq_controller_manager_name: str,
+    controller_name: str,
+    spawner_options: list[str],
+    remappings: list[tuple[str, str]] | None,
+) -> list[str]:
+    """
+    Build the spawner CLI arguments for one controller.
+
+    `fq_controller_manager_name` is the fully qualified controller manager name used by the
+    spawner process. `controller_name` is the controller that this spawner loads and configures.
+    """
+    arguments = ['--controller-manager', fq_controller_manager_name]
+    arguments.extend(spawner_options)
+
+    controller_ros_args = f'--ros-args --param use_sim_time:={str(use_sim_time)}'
+
+    if remappings:
+        remapping_args = ' '.join(
+            f'--remap {source_topic}:={target_topic}' for source_topic, target_topic in remappings
+        )
+        controller_ros_args = f'{controller_ros_args} {remapping_args}'
+
+    arguments.extend(['--controller-ros-args', controller_ros_args, controller_name])
+
+    return arguments
+
+
+def _launch_controller_manager(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
+    params_allow_substs = perform_typed_substitution(
+        ctx,
+        normalize_typed_substitution(LaunchConfiguration('robot_ros2_control_params_file_allow_substs'), bool),
+        bool,
+    )
+
+    return [
+        rlh.RequireFile(path=LaunchConfiguration('robot_ros2_control_params_file')),
+        Node(
+            package='controller_manager',
+            executable='ros2_control_node',
+            namespace=LaunchConfiguration('robot_namespace'),
+            parameters=[
+                ParameterFile(LaunchConfiguration('robot_ros2_control_params_file'), allow_substs=params_allow_substs),
+                {'use_sim_time': ParameterValue(LaunchConfiguration('use_sim_time'), value_type=bool)},
+            ],
+            # ros2_control_node keeps its default node name, `controller_manager`.
+            # Spawners target it later as `<robot_namespace>/controller_manager`.
+            # Add extra arguments like `--log-level debug`, `respawn`, ...
+            **rlh.resolve_node_arguments(
+                LaunchConfiguration('robot_controller_manager_node_args').perform(ctx),
+                extra_rejected_arguments={'namespace'},
+            ),
+        ),
+    ]
+
+
+def _launch_controller_spawners(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
 
     # Full namespace for the nodes.
     robot_namespace = LaunchConfiguration('robot_namespace').perform(ctx)
 
     ldes: list[LaunchDescriptionEntity] = []
 
-    if not use_sim_time_bool:
-        params_allow_substs = perform_typed_substitution(
-            ctx,
-            normalize_typed_substitution(LaunchConfiguration('robot_ros2_control_params_file_allow_substs'), bool),
-            bool,
-        )
-
-        ldes.append(
-            Node(
-                package='controller_manager',
-                executable='ros2_control_node',
-                namespace=robot_namespace,
-                parameters=[
-                    ParameterFile(
-                        LaunchConfiguration('robot_ros2_control_params_file'), allow_substs=params_allow_substs
-                    ),
-                    {'use_sim_time': ParameterValue(LaunchConfiguration('use_sim_time'), value_type=bool)},
-                ],
-                # Add extra arguments like `--log-level debug`, `respawn`, ...
-                **rlh.resolve_node_arguments(
-                    LaunchConfiguration('robot_controller_manager_node_args').perform(ctx),
-                    extra_rejected_arguments={'namespace'},
-                ),
-            )
-        )
+    use_sim_time = cast(
+        bool,
+        perform_typed_substitution(ctx, normalize_typed_substitution(LaunchConfiguration('use_sim_time'), bool), bool),
+    )
 
     # Build the argv list for each spawner with the same order used by the spawner CLI help:
     # 1. Controller manager's name.
@@ -144,71 +188,45 @@ def _launch_nodes(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     # Full name of the controller manager.
     controller_manager = rlh.resolve_name(robot_namespace, 'controller_manager')
 
-    common_controller_ros_args = f'--ros-args --param use_sim_time:={str(use_sim_time_bool).lower()}'
-
-    joint_state_broadcaster_remappings = _to_controller_remap_args(
-        _resolve_controller_remappings(
-            'robot_joint_state_broadcaster_controller_remappings',
-            LaunchConfiguration('robot_joint_state_broadcaster_controller_remappings').perform(ctx),
-        )
-    )
-
-    joint_state_broadcaster_controller_spawner_arguments = ['--controller-manager', controller_manager]
-    joint_state_broadcaster_controller_spawner_arguments.extend(
+    joint_state_broadcaster_controller_spawner_arguments = _get_spawner_arguments(
+        use_sim_time,
+        controller_manager,
+        'joint_state_broadcaster',
         _resolve_spawner_options(
             'robot_joint_state_broadcaster_spawner_options',
             LaunchConfiguration('robot_joint_state_broadcaster_spawner_options').perform(ctx),
-        )
-    )
-    joint_state_broadcaster_controller_spawner_arguments.extend(
-        [
-            '--controller-ros-args',
-            _join_controller_ros_args(common_controller_ros_args, joint_state_broadcaster_remappings),
-            'joint_state_broadcaster',
-        ]
-    )
-
-    mima_controller_remappings = _to_controller_remap_args(
+        ),
         _resolve_controller_remappings(
-            'robot_mima_controller_remappings', LaunchConfiguration('robot_mima_controller_remappings').perform(ctx)
-        )
+            'robot_joint_state_broadcaster_controller_remappings',
+            LaunchConfiguration('robot_joint_state_broadcaster_controller_remappings').perform(ctx),
+        ),
     )
 
-    mima_controller_spawner_arguments = ['--controller-manager', controller_manager]
-    mima_controller_spawner_arguments.extend(
+    mima_controller_spawner_arguments = _get_spawner_arguments(
+        use_sim_time,
+        controller_manager,
+        'mima_controller',
         _resolve_spawner_options(
             'robot_mima_controller_spawner_options',
             LaunchConfiguration('robot_mima_controller_spawner_options').perform(ctx),
-        )
-    )
-    mima_controller_spawner_arguments.extend(
-        [
-            '--controller-ros-args',
-            _join_controller_ros_args(common_controller_ros_args, mima_controller_remappings),
-            'mima_controller',
-        ]
-    )
-
-    fork_trajectory_controller_remappings = _to_controller_remap_args(
+        ),
         _resolve_controller_remappings(
-            'robot_fork_trajectory_controller_remappings',
-            LaunchConfiguration('robot_fork_trajectory_controller_remappings').perform(ctx),
-        )
+            'robot_mima_controller_remappings', LaunchConfiguration('robot_mima_controller_remappings').perform(ctx)
+        ),
     )
 
-    fork_trajectory_controller_spawner_arguments = ['--controller-manager', controller_manager]
-    fork_trajectory_controller_spawner_arguments.extend(
+    fork_trajectory_controller_spawner_arguments = _get_spawner_arguments(
+        use_sim_time,
+        controller_manager,
+        'fork_trajectory_controller',
         _resolve_spawner_options(
             'robot_fork_trajectory_controller_spawner_options',
             LaunchConfiguration('robot_fork_trajectory_controller_spawner_options').perform(ctx),
-        )
-    )
-    fork_trajectory_controller_spawner_arguments.extend(
-        [
-            '--controller-ros-args',
-            _join_controller_ros_args(common_controller_ros_args, fork_trajectory_controller_remappings),
-            'fork_trajectory_controller',
-        ]
+        ),
+        _resolve_controller_remappings(
+            'robot_fork_trajectory_controller_remappings',
+            LaunchConfiguration('robot_fork_trajectory_controller_remappings').perform(ctx),
+        ),
     )
 
     # Add the spawner nodes after their argv lists have been built. A spawner is a short-lived
@@ -259,19 +277,16 @@ def _resolve_spawner_options(launch_argument_name: str, launch_argument_value: s
 
     ``launch_argument_name`` is the name of a launch argument such as
     ``robot_mima_controller_spawner_options`` and is used only in error messages.
-    ``launch_argument_value`` is the already resolved value of that launch argument. It is written
-    like a small command line, for example ``--switch-timeout 30.0 --inactive``. This function uses
-    ``shlex.split`` so quoted values are split with the same rules a shell would use.
+    ``launch_argument_value`` is the already resolved value of that launch argument.
+    It is written like a small command line, for example ``--switch-timeout 30.0 --inactive``.
+    This function uses ``shlex.split`` so quoted values are split with the same rules a shell would
+    use.
 
-    This function is the only place that decides which user-provided options are allowed to reach
-    the ``spawner`` executable. Flag options are returned as one token. Options with a value are
-    returned as two tokens: the option name and its value. If the user passes an unknown option,
-    forgets the value for an option, or puts another option where the value should be, the function
-    raises ``ValueError`` with the launch argument name in the message.
-
-    The launch file does not let this argument set the controller name, controller manager,
-    parameter files, or controller ROS arguments. Those values are built explicitly in
-    ``_launch_nodes`` so every spawner call keeps the same shape.
+    Flag options are returned as one token.
+    Options with a value are returned as two tokens: the option name and its value.
+    If the user passes an unknown option, forgets the value for an option, or puts another option
+    where the value should be, the function raises ``ValueError`` with the launch argument name in
+    the message.
     """
     allowed_spawner_flag_options = {
         '--load-only',
@@ -334,17 +349,3 @@ def _resolve_spawner_options(launch_argument_name: str, launch_argument_value: s
         )
 
     return spawner_options
-
-
-def _join_controller_ros_args(*args: str) -> str:
-    return ' '.join(arg for arg in args if arg)
-
-
-def _to_controller_remap_args(remappings: list[tuple[str, str]] | None) -> str:
-    """
-    Convert resolved controller remapping pairs to the string expected by ``--controller-ros-args``.
-    """
-    if not remappings:
-        return ''
-
-    return ' '.join(f'--remap {source_topic}:={target_topic}' for source_topic, target_topic in remappings)

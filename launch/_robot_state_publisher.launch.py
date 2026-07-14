@@ -1,11 +1,12 @@
 import shlex
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 import ros2_launch_helpers as rlh
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchContext, LaunchDescription, LaunchDescriptionEntity
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetLaunchConfiguration
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
 from launch_ros.actions import Node
@@ -29,7 +30,9 @@ def generate_launch_description() -> LaunchDescription:
                 description='Allow ROS launch substitutions in robot_rsp_params_file',
             ),
             DeclareLaunchArgument(
-                'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
+                'use_sim_time',
+                choices=['True', 'true', 'False', 'false'],
+                description='Use ROS time from /clock if true.',
             ),
             DeclareLaunchArgument(
                 'robot_xacro_args_file',
@@ -39,7 +42,9 @@ def generate_launch_description() -> LaunchDescription:
             DeclareLaunchArgument(
                 'robot_sim_file',
                 default_value='',
-                description='Path to the simulation YAML. It is used only when use_sim_time is true.',
+                description=(
+                    'Optional simulation YAML. Empty means the xacro model is built without simulation plugins.'
+                ),
             ),
             DeclareLaunchArgument(
                 'robot_rsp_node_args',
@@ -47,8 +52,9 @@ def generate_launch_description() -> LaunchDescription:
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             rlh.RequireFile(path=LaunchConfiguration('robot_rsp_params_file')),
-            # Insert the keys `robot_namespace` and `robot_prefix` into the launch context, with
-            # their values, so they can be substituted in the parameter file if needed.
+            # Insert `robot_type`, `robot_namespace` and `robot_prefix` into the launch context.
+            # Their values can then be substituted in the parameter file if needed.
+            SetLaunchConfiguration('robot_type', 'mima_mkv30'),
             rlh.SetRobotNamespace(
                 namespace=LaunchConfiguration('namespace'),
                 robot_name=LaunchConfiguration('robot_name'),
@@ -60,7 +66,9 @@ def generate_launch_description() -> LaunchDescription:
     )
 
 
-def _build_xacro_command(ctx: LaunchContext) -> list[Any]:
+def _build_xacro_command(
+    xacro_file: str, robot_xacro_args_file: str, robot_sim_file: str, ros2_control_config_file: str
+) -> list[Any]:
     """
     Build the xacro command list used to generate `robot_description`.
 
@@ -68,25 +76,38 @@ def _build_xacro_command(ctx: LaunchContext) -> list[Any]:
     robot_name, robot_sim_file, and ros2_control_config_file directly. It then
     appends the optional xacro arguments loaded from `robot_xacro_args_file`.
     """
-    robot_model = LaunchConfiguration('robot_model').perform(ctx)
+    if not xacro_file:
+        raise ValueError('xacro_file must be a non-empty string.')
 
-    # Get the xacro file for the selected model.
-    xacro_file = Path(get_package_share_directory('robot_mima_mkv30')).joinpath(
-        'urdf', 'models', f'model_{robot_model}.xacro'
-    )
-
-    if not xacro_file.is_file():
+    if not Path(xacro_file).is_file():
         raise FileNotFoundError(f"File '{xacro_file}' does not exist.")
 
-    use_sim_time_lc = LaunchConfiguration('use_sim_time')
-    use_sim_time_bool = perform_typed_substitution(ctx, normalize_typed_substitution(use_sim_time_lc, bool), bool)
+    if robot_xacro_args_file and not Path(robot_xacro_args_file).is_file():
+        raise FileNotFoundError(f"File '{robot_xacro_args_file}' does not exist.")
 
-    if not use_sim_time_bool:
-        robot_sim_file = ''
+    if robot_sim_file and not Path(robot_sim_file).is_file():
+        raise FileNotFoundError(f"File '{robot_sim_file}' does not exist.")
+
+    # If a simulation file is provided, then the model includes simulation-specific elements such
+    # as plugins.
+    # One of those plugins is the ros2_control plugin, which requires a ros2_control configuration
+    # file.
+    # In that case, ensure that the ros2_control configuration file is provided and exists.
+    if robot_sim_file:
+        if not ros2_control_config_file:
+            raise ValueError(
+                'ros2_control_config_file must be provided when robot_sim_file is provided. '
+                'The ros2_control configuration file is required by the ros2_control plugin.'
+            )
+
+        if not Path(ros2_control_config_file).is_file():
+            raise FileNotFoundError(f"File '{ros2_control_config_file}' does not exist.")
     else:
-        robot_sim_file = LaunchConfiguration('robot_sim_file').perform(ctx)
-
-    robot_xacro_args_file = LaunchConfiguration('robot_xacro_args_file').perform(ctx)
+        # If a simulation file is not provided, the ros2_control_config_file is not used in the
+        # robot model. Therefore, it does not matter whether a file is passed or whether it exists.
+        # However, to be explicit with the intention of not using a ros2_control configuration file
+        # when not using simulation, pass an empty string to xacro.
+        ros2_control_config_file = ''
 
     # The following xacro arguments are always passed directly by the launch files:
     # namespace, robot_name, robot_sim_file, and ros2_control_config_file.
@@ -102,13 +123,13 @@ def _build_xacro_command(ctx: LaunchContext) -> list[Any]:
     cmd: list[Any] = [
         FindExecutable(name='xacro'),
         ' ',
-        str(xacro_file),
+        xacro_file,
         ' namespace:=',
         LaunchConfiguration('namespace'),
         ' robot_name:=',
         LaunchConfiguration('robot_name'),
         ' ros2_control_config_file:=',
-        LaunchConfiguration('robot_rsp_params_file'),
+        _quote_xarg_value_if_needed(ros2_control_config_file),
         ' sim_file:=',
         _quote_xarg_value_if_needed(robot_sim_file),
     ]
@@ -129,9 +150,31 @@ def _build_xacro_command(ctx: LaunchContext) -> list[Any]:
 
 
 def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
-    params_allow_substs = perform_typed_substitution(
+
+    # When substitutions are allowed, render the parameter file before using it.
+    # robot_state_publisher and xacro must receive the same parameter file path.
+    params_file = LaunchConfiguration('robot_rsp_params_file').perform(ctx)
+
+    if perform_typed_substitution(
         ctx, normalize_typed_substitution(LaunchConfiguration('robot_rsp_params_file_allow_substs'), bool), bool
+    ):
+        # Create a temporary file to hold the rendered parameters.
+        with NamedTemporaryFile(prefix='params_', suffix='.yaml', delete=False) as temp_file:
+            output_path = Path(temp_file.name)
+        rlh.render_params_file(params_file, ctx, output_path)
+        params_file = str(output_path)
+
+    robot_model = LaunchConfiguration('robot_model').perform(ctx)
+
+    # Get the xacro file for the selected model.
+    xacro_file = Path(get_package_share_directory('robot_mima_mkv30')).joinpath(
+        'urdf', 'models', f'model_{robot_model}.xacro'
     )
+
+    # Get the robot xacro arguments file from the launch configuration, if present.
+    # It is an optional YAML file that contains xacro arguments loaded from configuration.
+    robot_xacro_args_file = LaunchConfiguration('robot_xacro_args_file').perform(ctx)
+    robot_sim_file = LaunchConfiguration('robot_sim_file').perform(ctx)
 
     return [
         Node(
@@ -139,12 +182,17 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
             executable='robot_state_publisher',
             namespace=LaunchConfiguration('robot_namespace'),
             parameters=[
-                ParameterFile(LaunchConfiguration('robot_rsp_params_file'), allow_substs=params_allow_substs),
+                ParameterFile(params_file, allow_substs=False),
                 {
-                    'robot_description': ParameterValue(Command(_build_xacro_command(ctx)), value_type=str),
+                    'robot_description': ParameterValue(
+                        Command(
+                            _build_xacro_command(str(xacro_file), robot_xacro_args_file, robot_sim_file, params_file)
+                        ),
+                        value_type=str,
+                    ),
                     # robot_description is always published on a topic.
                     'use_robot_description_topic': True,
-                    # Frame prefixes are already part of the link and joint names generated by xacro.
+                    # Link and joint names generated by xacro already include their frame prefixes.
                     'frame_prefix': '',
                     'use_sim_time': ParameterValue(LaunchConfiguration('use_sim_time'), value_type=bool),
                 },

@@ -1,7 +1,6 @@
 import ros2_launch_helpers as rlh
 from launch import LaunchContext, LaunchDescription, LaunchDescriptionEntity
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
-from launch.conditions import IfCondition
+from launch.actions import DeclareLaunchArgument, OpaqueFunction, SetLaunchConfiguration
 from launch.substitutions import LaunchConfiguration
 from launch.utilities.type_utils import normalize_typed_substitution, perform_typed_substitution
 from launch_ros.actions import Node
@@ -17,9 +16,6 @@ def generate_launch_description() -> LaunchDescription:
     be run directly as well. When robot_bridge_params_file_allow_substs is true, the caller
     can pass the launch keys used by the parameter file as extra CLI arguments
     even if this launch file does not declare those keys.
-
-    When use_sim_time is false, this launch file skips the bridge node because
-    the bridge is only used in simulation.
     """
 
     return LaunchDescription(
@@ -35,7 +31,9 @@ def generate_launch_description() -> LaunchDescription:
                 description='Allow ROS launch substitutions in robot_bridge_params_file',
             ),
             DeclareLaunchArgument(
-                'use_sim_time', choices=['True', 'true', 'False', 'false'], description='Use simulation clock if true'
+                'use_sim_time',
+                choices=['True', 'true', 'False', 'false'],
+                description='Use ROS time from /clock if true.',
             ),
             DeclareLaunchArgument(
                 'robot_bridge_config_file', description='Path to the robot bridge configuration file.'
@@ -46,25 +44,26 @@ def generate_launch_description() -> LaunchDescription:
                 description=rlh.LAUNCH_ACTION_ARGUMENTS_DESC,
             ),
             rlh.RequireFile(path=LaunchConfiguration('robot_bridge_params_file')),
-            # Insert the keys `robot_namespace` and `robot_prefix` into the launch context, with
-            # their values, so they can be substituted in the parameter file if needed.
+            rlh.RequireFile(path=LaunchConfiguration('robot_bridge_config_file')),
+            # Insert `robot_type`, `robot_namespace` and `robot_prefix` into the launch context.
+            # Their values can then be substituted in the parameter file if needed.
+            SetLaunchConfiguration('robot_type', 'mima_mkv30'),
             rlh.SetRobotNamespace(
                 namespace=LaunchConfiguration('namespace'),
                 robot_name=LaunchConfiguration('robot_name'),
                 output_context_key='robot_namespace',
             ),
             rlh.SetRobotPrefix(robot_name=LaunchConfiguration('robot_name'), output_context_key='robot_prefix'),
-            OpaqueFunction(function=_launch_node, condition=IfCondition(LaunchConfiguration('use_sim_time'))),
+            OpaqueFunction(function=_launch_node),
         ]
     )
 
 
 def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
     """
-    Launch the bridge for one robot instance.
-
-    The bridge is only useful when Gazebo is running, so this function is only executed when
-    `use_sim_time` is true.
+    Launch the bridge for the robot model.
+    The bridge transfers topics between ROS and Gazebo.
+    The caller decides whether the bridge node uses ROS time from /clock through `use_sim_time`.
     """
 
     params_allow_substs = perform_typed_substitution(
@@ -83,7 +82,7 @@ def _launch_node(ctx: LaunchContext) -> list[LaunchDescriptionEntity]:
                 # `override_frame_id` is set to an empty string because Gazebo plugins publish the
                 # required frame_id.
                 {
-                    'use_sim_time': True,
+                    'use_sim_time': ParameterValue(LaunchConfiguration('use_sim_time'), value_type=bool),
                     'config_file': ParameterValue(LaunchConfiguration('robot_bridge_config_file'), value_type=str),
                     'expand_gz_topic_names': True,
                     'override_frame_id': '',

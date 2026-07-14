@@ -22,6 +22,13 @@ def test_resolve_spawner_options_rejects_controller_ros_args() -> None:
         )
 
 
+def test_resolve_spawner_options_reports_unclosed_quotes_with_argument_name() -> None:
+    module = _load_ros2_control_launch_module()
+
+    with pytest.raises(ValueError, match='robot_mima_controller_spawner_options'):
+        module._resolve_spawner_options('robot_mima_controller_spawner_options', '--switch-timeout "30.0')
+
+
 def test_resolve_spawner_options_rejects_value_option_without_value() -> None:
     module = _load_ros2_control_launch_module()
 
@@ -56,31 +63,24 @@ def test_resolve_controller_remappings_rejects_invalid_json_with_argument_name()
         module._resolve_controller_remappings('robot_mima_controller_remappings', '')
 
 
-def test_to_controller_remap_args_accepts_empty_values() -> None:
+def test_get_spawner_arguments_builds_expected_controller_cli() -> None:
     module = _load_ros2_control_launch_module()
 
-    assert module._to_controller_remap_args(None) == ''
-    assert module._to_controller_remap_args([]) == ''
-
-
-def test_to_controller_remap_args_converts_pairs_to_controller_ros_args_string() -> None:
-    module = _load_ros2_control_launch_module()
-
-    assert (
-        module._to_controller_remap_args(
-            [('~/reference', 'cmd_vel'), ('~/odometry', 'odom'), ('~/controller_state', 'state')]
-        )
-        == '--remap ~/reference:=cmd_vel --remap ~/odometry:=odom --remap ~/controller_state:=state'
-    )
-
-
-def test_join_controller_ros_args_skips_empty_fragments() -> None:
-    module = _load_ros2_control_launch_module()
-
-    assert (
-        module._join_controller_ros_args('--ros-args --param use_sim_time:=true', '', '--remap ~/reference:=cmd_vel')
-        == '--ros-args --param use_sim_time:=true --remap ~/reference:=cmd_vel'
-    )
+    assert module._get_spawner_arguments(
+        True,
+        '/ifc/mima_mkv30_1/controller_manager',
+        'mima_controller',
+        ['--switch-timeout', '30.0'],
+        [('~/reference', 'cmd_vel'), ('~/odometry', 'odom')],
+    ) == [
+        '--controller-manager',
+        '/ifc/mima_mkv30_1/controller_manager',
+        '--switch-timeout',
+        '30.0',
+        '--controller-ros-args',
+        '--ros-args --param use_sim_time:=True --remap ~/reference:=cmd_vel --remap ~/odometry:=odom',
+        'mima_controller',
+    ]
 
 
 def _load_ros2_control_launch_module() -> ModuleType:
