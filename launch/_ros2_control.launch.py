@@ -283,11 +283,16 @@ def _resolve_spawner_options(launch_argument_name: str, launch_argument_value: s
     }
 
     allowed_spawner_value_options = {'--controller-manager-timeout', '--switch-timeout', '--service-call-timeout'}
-
     allowed_options = sorted(allowed_spawner_flag_options | allowed_spawner_value_options)
 
     # Use shlex.split to handle quoted values and split the string into tokens.
-    tokens = shlex.split(launch_argument_value)
+    try:
+        tokens = shlex.split(launch_argument_value)
+    except ValueError as error:
+        raise ValueError(
+            f"Launch argument '{launch_argument_name}' must contain valid shell-style options: {error}"
+        ) from error
+
     spawner_options: list[str] = []
     index = 0
 
