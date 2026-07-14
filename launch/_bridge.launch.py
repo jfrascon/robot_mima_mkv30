@@ -12,10 +12,10 @@ def generate_launch_description() -> LaunchDescription:
     """
     Build the internal Gazebo bridge launch description for one robot model.
 
-    This launch file is meant to be included by `robot.launch.py`, but can
-    be run directly as well. When robot_bridge_params_file_allow_substs is true, the caller
-    can pass the launch keys used by the parameter file as extra CLI arguments
-    even if this launch file does not declare those keys.
+    This launch file is meant to be composed by Gazebo simulation launch files, but can be run
+    directly as well. When robot_bridge_params_file_allow_substs is true, the caller can pass the
+    launch keys used by the parameter file as extra CLI arguments even if this launch file does not
+    declare those keys.
     """
 
     return LaunchDescription(

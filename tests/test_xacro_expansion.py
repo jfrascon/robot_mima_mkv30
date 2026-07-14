@@ -57,17 +57,19 @@ def test_model_base_has_only_expected_wheel_meshes_and_no_sensors(tmp_path: Path
 
 
 def test_launch_show_args_lists_expected_arguments() -> None:
-    result = run_bash('ros2 launch robot_mima_mkv30 robot.launch.py robot_model:=base --show-args')
+    result = run_bash('ros2 launch robot_mima_mkv30 real_robot.launch.py robot_model:=base --show-args')
     output = result.stdout + result.stderr
 
     assert result.returncode == 0, output
-    assert "'use_sim_time'" in output, output
     assert "'robot_model'" in output, output
     assert "'robot_name'" in output, output
     assert "'robot_params_file'" in output, output
     assert "'robot_xacro_args_file'" in output, output
     assert "'robot_params_file_allow_substs'" in output, output
-    assert "'robot_bridge_node_args'" in output, output
     assert "'robot_rsp_node_args'" in output, output
+    assert "'robot_controller_manager_node_args'" in output, output
+    assert "'use_sim_time'" not in output, output
+    assert "'robot_sim_file'" not in output, output
+    assert "'robot_bridge_node_args'" not in output, output
     assert "'properties_file'" not in output, output
     assert "'controller_config_file'" not in output, output

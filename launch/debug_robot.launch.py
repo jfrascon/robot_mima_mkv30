@@ -18,9 +18,9 @@ def generate_launch_description() -> LaunchDescription:
     """
     Build the simulation debug launch description for one MiMA MKV30 robot model.
 
-    This launch file is a package-local debug tool. It starts a simple Gazebo world, includes the
-    normal robot launch file, spawns the robot in Gazebo, and optionally starts RViz and the Gazebo
-    GUI.
+    This launch file is a package-local debug tool. It starts a simple Gazebo world, starts
+    robot_state_publisher, spawns the robot in Gazebo, starts the robot bridge and controller
+    spawners, and optionally starts RViz and the Gazebo GUI.
     """
     return LaunchDescription(
         [
@@ -109,32 +109,69 @@ def generate_launch_description() -> LaunchDescription:
                 description='Launch Gazebo Sim GUI client. If false, Gazebo Sim runs in headless mode.',
             ),
             _include_spawn_world(),
-            _include_robot(),
+            _include_robot_state_publisher(),
             OpaqueFunction(function=_include_spawn_model),
+            _include_bridge(),
+            _include_ros2_control(),
             _launch_rviz(),
         ]
     )
 
 
-def _include_robot() -> IncludeLaunchDescription:
-    """Include the public robot launch with the same public arguments exposed by this debug launch."""
+def _include_bridge() -> IncludeLaunchDescription:
+    """Include the robot bridge after the model has been spawned in Gazebo."""
 
     return IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', 'robot.launch.py'])
+            PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_bridge.launch.py'])
+        ),
+        launch_arguments={
+            'namespace': LaunchConfiguration('namespace'),
+            'robot_name': LaunchConfiguration('robot_name'),
+            'robot_bridge_params_file': LaunchConfiguration('robot_params_file'),
+            'robot_bridge_params_file_allow_substs': LaunchConfiguration('robot_params_file_allow_substs'),
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'robot_bridge_config_file': LaunchConfiguration('robot_bridge_config_file'),
+            'robot_bridge_node_args': LaunchConfiguration('robot_bridge_node_args'),
+        }.items(),
+    )
+
+
+def _include_robot_state_publisher() -> IncludeLaunchDescription:
+    """Include robot_state_publisher before spawning the robot model in Gazebo."""
+
+    return IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_robot_state_publisher.launch.py'])
         ),
         launch_arguments={
             'namespace': LaunchConfiguration('namespace'),
             'robot_model': LaunchConfiguration('robot_model'),
             'robot_name': LaunchConfiguration('robot_name'),
-            'robot_params_file': LaunchConfiguration('robot_params_file'),
-            'robot_params_file_allow_substs': LaunchConfiguration('robot_params_file_allow_substs'),
+            'robot_rsp_params_file': LaunchConfiguration('robot_params_file'),
+            'robot_rsp_params_file_allow_substs': LaunchConfiguration('robot_params_file_allow_substs'),
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'robot_xacro_args_file': LaunchConfiguration('robot_xacro_args_file'),
             'robot_sim_file': LaunchConfiguration('robot_sim_file'),
-            'robot_bridge_config_file': LaunchConfiguration('robot_bridge_config_file'),
             'robot_rsp_node_args': LaunchConfiguration('robot_rsp_node_args'),
-            'robot_bridge_node_args': LaunchConfiguration('robot_bridge_node_args'),
+        }.items(),
+    )
+
+
+def _include_ros2_control() -> IncludeLaunchDescription:
+    """Include controller spawners after Gazebo has loaded the ros2_control plugin."""
+
+    return IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare('robot_mima_mkv30'), 'launch', '_ros2_control.launch.py'])
+        ),
+        launch_arguments={
+            'namespace': LaunchConfiguration('namespace'),
+            'robot_name': LaunchConfiguration('robot_name'),
+            'robot_ros2_control_params_file': LaunchConfiguration('robot_params_file'),
+            'robot_ros2_control_params_file_allow_substs': LaunchConfiguration('robot_params_file_allow_substs'),
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'start_robot_controller_manager': 'False',
             'robot_controller_manager_node_args': LaunchConfiguration('robot_controller_manager_node_args'),
             'robot_joint_state_broadcaster_spawner_options': LaunchConfiguration(
                 'robot_joint_state_broadcaster_spawner_options'

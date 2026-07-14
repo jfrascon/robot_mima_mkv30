@@ -19,26 +19,43 @@ The package includes:
 
 - Xacro robot files.
 - Per-model configuration under `config/model_*`.
-- Main robot launch file: `launch/robot.launch.py`.
+- Real robot launch preset: `launch/real_robot.launch.py`.
 - Local debug launch file: `launch/debug_robot.launch.py`.
 - Bridge, simulation, RViz, and `ros2_control` configuration.
 
 ## Normal Use
 
-Launch the robot with:
+Launch the real robot preset with:
 
 ```bash
-ros2 launch robot_mima_mkv30 robot.launch.py ...
+ros2 launch robot_mima_mkv30 real_robot.launch.py ...
 ```
 
 The most relevant launch arguments are:
 
 - `robot_model`: selects the model to launch, for example `base` or `sensors1`.
 - `robot_name`: sets the robot name used by the launch file.
-- `params_file`: selects the ROS parameter file.
-- `params_file_allow_substs`: enables or disables substitutions inside the parameter file.
+- `robot_params_file`: selects the complete ROS parameter file.
+- `robot_params_file_allow_substs`: enables or disables substitutions inside the parameter file.
 - `robot_xacro_args_file`: selects the file with Xacro arguments for the robot.
-- `sim_file`: selects the simulation configuration file.
+
+`real_robot.launch.py` does not launch Gazebo bridge nodes and does not load simulation plugins.
+Gazebo simulation and rosbag replay launch files should compose the internal launch files they need.
+
+## Real, Simulation, And Bag Replay Launching
+
+`real_robot.launch.py` is intentionally a real-robot preset. It launches the parts that belong to the robot when the robot is running outside Gazebo: `robot_state_publisher`, the local `ros2_control` controller manager, and the controller spawners. It does not accept a simulation Xacro file, does not load Gazebo plugins, does not launch bridge nodes, and does not use ROS time from `/clock`. This makes the launch file easier to reason about: if this preset is used, the robot is expected to be controlled as a real robot, not as a Gazebo model.
+
+Gazebo simulation needs a different launch structure because the order matters. A simulation launcher should usually compose the internal launch files in this order:
+
+1. Launch `robot_state_publisher`, so the robot description is available.
+2. Spawn the model in Gazebo, so the Gazebo plugins from the simulation Xacro file are actually loaded.
+3. Launch the Gazebo bridge, because there are Gazebo topics to bridge only after the model and its plugins exist.
+4. Launch the `ros2_control` controller spawners. In simulation, the controller manager is normally provided by the Gazebo `ros2_control` plugin loaded with the model, so the standalone `ros2_control_node` should not be started by the robot package.
+
+`debug_robot.launch.py` is the package-local example of that simulation composition. Project-level launch files can follow the same idea and include only the pieces they need.
+
+Rosbag replay is a third case. A bag may already contain sensor topics, transforms, and other runtime data, so replay launch files should be explicit about which parts they still need. In many replay sessions there is no Gazebo model to spawn, no Gazebo bridge to launch, and no controller manager or controllers to start.
 
 ## Model Configuration
 
