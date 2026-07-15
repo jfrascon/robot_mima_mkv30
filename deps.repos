@@ -22,7 +22,7 @@ repositories:
     ros_gz_tools:
         type: git
         url: git@github.com:jfrascon/ros_gz_tools.git
-        version: fb809f7664989f52f48873c7fa70762de5a6025a
+        version: a18ed76b253dd142d07ec72b35d1b51cbe90dcbf
         #exclude: [] # list of repos files inside repository_path to exclude (optional)
 
 # The package `perte_controller_mima` is declared as a runtime dependency in
