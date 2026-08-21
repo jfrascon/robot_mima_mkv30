@@ -12,17 +12,17 @@ repositories:
     robotics_description:
         type: git
         url: git@github.com:jfrascon/robotics_description.git
-        version: 85318e812b2df34aea1e1805abd0a2da271e2f0a
+        version: 7948cb436d941277ef872bb2f598c3eacf277c66
         #exclude: [] # list of repos files inside repository_path to exclude (optional)
     ros2_launch_helpers:
         type: git
         url: git@github.com:jfrascon/ros2_launch_helpers.git
-        version: e3a7f6c7becb5afeced6653fca1aaee1b69a22df
+        version: 6c04db7cb9280418454a3a472ba0b465448659ab
         #exclude: [] # list of repos files inside repository_path to exclude (optional)
     ros_gz_tools:
         type: git
         url: git@github.com:jfrascon/ros_gz_tools.git
-        version: a18ed76b253dd142d07ec72b35d1b51cbe90dcbf
+        version: ec8c888c9575274793acaf89afd8688e64397b11
         #exclude: [] # list of repos files inside repository_path to exclude (optional)
 
 # The package `perte_controller_mima` is declared as a runtime dependency in
