@@ -124,8 +124,8 @@ front_lidar2d:
   visualize: false
   update_rate: 20.0
   hor_fov_deg: {"min_angle": -90, "max_angle": 90}
-  hor_res_deg: 0.05
-  dist_span: {"min_dist": 0.1, "max_dist": 25.0}
+  hor_res_deg: 0.1
+  dist_span: {"min_dist": 0.2, "max_dist": 25.0}
   dist_res: 0.015
   gaussian_noise: {"mean": 0.0, "stddev": 0.01}
   topic: front_lidar2d/scan
@@ -140,8 +140,8 @@ back_lidar2d:
   visualize: false
   update_rate: 20.0
   hor_fov_deg: {"min_angle": -90, "max_angle": 90}
-  hor_res_deg: 0.05
-  dist_span: {"min_dist": 0.1, "max_dist": 25.0}
+  hor_res_deg: 0.1
+  dist_span: {"min_dist": 0.2, "max_dist": 25.0}
   dist_res: 0.015
   gaussian_noise: {"mean": 0.0, "stddev": 0.01}
   topic: back_lidar2d/scan
@@ -156,8 +156,8 @@ left_lidar2d:
   visualize: false
   update_rate: 20.0
   hor_fov_deg: {"min_angle": -90, "max_angle": 90}
-  hor_res_deg: 0.05
-  dist_span: {"min_dist": 0.1, "max_dist": 25.0}
+  hor_res_deg: 0.1
+  dist_span: {"min_dist": 0.2, "max_dist": 25.0}
   dist_res: 0.015
   gaussian_noise: {"mean": 0.0, "stddev": 0.01}
   topic: left_lidar2d/scan
@@ -172,8 +172,8 @@ right_lidar2d:
   visualize: false
   update_rate: 20.0
   hor_fov_deg: {"min_angle": -90, "max_angle": 90}
-  hor_res_deg: 0.05
-  dist_span: {"min_dist": 0.1, "max_dist": 25.0}
+  hor_res_deg: 0.1
+  dist_span: {"min_dist": 0.2, "max_dist": 25.0}
   dist_res: 0.015
   gaussian_noise: {"mean": 0.0, "stddev": 0.01}
   topic: right_lidar2d/scan
