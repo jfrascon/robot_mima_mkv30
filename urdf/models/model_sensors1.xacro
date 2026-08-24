@@ -385,7 +385,7 @@
                     value="${sim_cfg.get('chassis_imu', dict())}"/>
     <xacro:set_props_plugin_imu prop_prefix="chassis_imu_sim"
                                 imu_sim_cfg="${chassis_imu_sim_cfg}"/>
-    <xacro:box_imu
+    <xacro:imu_box
       name="chassis_imu"
       prefix="${robot_prefix}"
       parent_frame="${robot_prefix}base_link"
